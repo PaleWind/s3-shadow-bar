@@ -33,6 +33,7 @@ class MenuInterface {
   }
   MenuInterface *parent;
   vector<MenuInterface*> pageList;
+  
   void SetParent(MenuInterface *parent) {
     this->parent = parent;
   }
@@ -65,7 +66,7 @@ void drawMenuDown()
   
     for (int i=0; i<=numRows; i++)
     {
-      u8x8.drawString(2, 2+ i, currentMenuObj->pageList[topRow+i]->Name);
+      u8x8.drawString(2, 2+ i, currentMenuObj->pageList[topRow+i]->GetName());
     }
   } else {
     //if (rotationCounter > menuItemsCount) {rotationCounter--;}
@@ -73,7 +74,7 @@ void drawMenuDown()
     Serial.print("down ");Serial.println(currentMenuObj->pageList.size());
     for (int i=0; i<menuItemsCount; i++)
     {
-      u8x8.drawString(2, 2+ i, currentMenuObj->pageList[i]->Name);
+      u8x8.drawString(2, 2+ i, currentMenuObj->pageList[i]->GetName());
     }
   }
 }
@@ -92,7 +93,7 @@ void drawMenuUp()
     
     for (int i=0; i<=numRows; i++)
     {
-      u8x8.drawString(2, 2+ i, currentMenuObj->pageList[topRow+i]->Name);
+      u8x8.drawString(2, 2+ i, currentMenuObj->pageList[topRow+i]->GetName());
     }
 
   } else {
@@ -101,7 +102,7 @@ void drawMenuUp()
     
     for (int i=0; i<currentMenuObj->pageList.size(); i++)
     {
-        Serial.print("name ");Serial.println(currentMenuObj->pageList[i]->GetName());
+        //Serial.print("name ");Serial.println(currentMenuObj->pageList[i]->GetName());
       u8x8.drawString(2, 2+ i, currentMenuObj->pageList[i]->GetName());
     }
   }
@@ -141,18 +142,75 @@ public:
   }
 };
 
-class wifiPage : public MenuInterface { //Leaf
+class audioSettingsPage : public MenuInterface { //Leaf
 public:
   using MenuInterface::MenuInterface;
   //int* parameterPointer;
   char* GetName() override
   {
-    return wifiOn ? "On" : "Off";
 
   }
   void Display() override
   {
+    
+  }
+};
+
+class wifiSettingsPage : public MenuInterface { //Leaf
+public:
+  using MenuInterface::MenuInterface;
+  //int* parameterPointer;
+  char* GetName() override
+  {
+    if (wifiOn) 
+    { 
+      if (wifiConnected) { u8x8.drawString(2, 5, "Connected!"); }
+      else               { u8x8.drawString(1, 5, "Not Connected"); }
+    }
+    u8x8.drawString(0, 6, "Network:"); u8x8.drawString(2, 7, ssid.c_str());
+    //u8x8.drawString(0, 7, "Pass"); u8x8.drawString(6, 7, "****");
+    if (wifiOn) { return "Wifi:   On"; }
+    return "Wifi:   Off";
+  }
+  void Display() override
+  {
     wifiOn = !wifiOn;
+    if(wifiOn)
+    {
+      std::future<bool> future = mypromise.get_future();
+      ConnectWifi();
+      bool state = future.get();
+      Serial.println(state);
+    } else {
+      DisconnectWifi();
+      mypromise = std::promise<bool>();
+    }
+    drawMenuDown();
+  }
+};
+
+
+class bluetoothSettingsPage : public MenuInterface { //Leaf
+public:
+  using MenuInterface::MenuInterface;
+  //int* parameterPointer;
+  char* GetName() override
+  {
+    if (bluetoothOn && deviceConnected)
+    {
+      u8x8.drawString(2, 5, "Connected!"); 
+    } 
+    else if (bluetoothOn)
+    {
+      u8x8.drawString(1, 5, "Not Connected"); 
+    }
+    if (bluetoothOn) { return "Bluetooth: On"; }
+    return "Bluetooth: Off";
+  }
+  void Display() override
+  {
+    bluetoothOn = !bluetoothOn;
+    drawMenuDown();
   }
 };
 
@@ -197,25 +255,19 @@ void setupMenu()
     modes->AddMenuItem(new ModePage(patternNames[i]));
   }
 
-  Page *setting1 = new Page("Setting 1");
-  Page *setting2 = new Page("Setting 2");
-  Page *setting3 = new Page("Setting 3");
-  
-  //modes->AddMenuItem(mode1);
-    Serial.print("modes size ");Serial.println(modes->pageList.size());
+  Menu *wifiMenu = new Menu("Wifi");
+  wifiSettingsPage *wifiSettings = new wifiSettingsPage("Wifi");
+  wifiMenu->AddMenuItem(wifiSettings);
 
-  //modes->AddMenuItem(mode2);
-  //modes->AddMenuItem(mode3);
-   // Serial.print("modes size ");Serial.println(modes->pageList.size());
+  Menu *bluetoothMenu = new Menu("Bluetooth");
+  bluetoothSettingsPage *bluetoothSettings = new bluetoothSettingsPage("Bluetooth");
+  bluetoothMenu->AddMenuItem(bluetoothSettings);
 
-  settings->AddMenuItem(setting1);
-  settings->AddMenuItem(setting2);
-  settings->AddMenuItem(setting3);
-  //settings->AddMenuItem(mode3);
-  
+  settings->AddMenuItem(wifiMenu);
+  settings->AddMenuItem(bluetoothMenu);
+  //settings->AddMenuItem(setting3);
+
   menu->AddMenuItem(modes);
-    Serial.print("modes size ");Serial.println(modes->pageList.size());
-
   menu->AddMenuItem(settings);
   
   menu->Display();
@@ -283,6 +335,11 @@ bool debouncer()
 
 void updateScreen()
 {
+    if (redrawScreen == true) 
+    { 
+      drawMenuDown(); 
+      redrawScreen = false;
+    }
     if (rotaryEncoder) // Has rotary encoder moved?
     {
       // Get the movement (if valid)

@@ -4,33 +4,29 @@ byte startChannel = 0;
 byte artnetBrightness = 0;
 uint8_t artnetMode = 1;
 int previousDataLength = 0;
-bool state = true;
 
 bool wifiOn = false;
+bool wifiConnected  =false;
+std::promise<bool> mypromise;
 ArtnetWifi artnet;
 
-bool ConnectWifi(void)
+void ConnectWifi(void)
 {
-  int i = 0;
-
   WiFi.begin(ssid.c_str(), password.c_str());
   Serial.println("");
   Serial.println("Connecting to WiFi");
-
+  unsigned long lastConnectionRequest = millis();
   // Wait for connection
   Serial.print("Connecting");
-  while (WiFi.status() != WL_CONNECTED)
+  while (millis() - lastConnectionRequest < 10000)
   {
-    delay(500);
-    Serial.print(".");
-    if (i > 20)
+    if (WiFi.status() == WL_CONNECTED)
     {
-      state = false;
+      wifiConnected = true;
       break;
     }
-    i++;
   }
-  if (state)
+  if (wifiConnected == true)
   {
     Serial.println("");
     Serial.print("Connected to ");
@@ -44,11 +40,22 @@ bool ConnectWifi(void)
     Serial.println("");
     Serial.println("Connection failed.");
   }
-
-  return state;
+  mypromise.set_value(wifiConnected);
 }
 
-
+bool DisconnectWifi()
+{
+  try
+  {
+    WiFi.disconnect();
+    wifiConnected = false;   
+    return true;
+  } 
+  catch (...)
+  {
+    return false;
+  }
+}
 
 void artnetPixelMap(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* data)
 {

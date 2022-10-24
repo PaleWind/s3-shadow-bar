@@ -16,6 +16,7 @@ Preferences preferences;
 #include <sstream>
 #include <iomanip> 
 #include <cstdlib> 
+#include <future>
 using namespace std;
 
 //OLED
@@ -23,6 +24,7 @@ using namespace std;
 #include <Wire.h>
 #include <U8x8lib.h>
 U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(/* reset=*/ U8X8_PIN_NONE);   
+bool redrawScreen = false;
 
 //Bluetooth
 #include <BLEDevice.h>
@@ -97,10 +99,10 @@ uint8_t barHeights[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 TaskHandle_t task_loop1;
 void esploop1(void* pvParameters) 
 {
-  setup1();
+  setup2();
 
   for (;;)
-    loop1();
+    loop2();
 }
 
 
@@ -129,7 +131,7 @@ void setup(void)
   
   xTaskCreatePinnedToCore( /* Enable second core*/
   esploop1,               /* Task function. */
-  "loop1",                /* name of task. */
+  "loop2",                /* name of task. */
   10000,                  /* Stack size of task */
   NULL,                   /* parameter of the task */
   1,                      /* priority of the task */
@@ -138,7 +140,7 @@ void setup(void)
   
 }
 
-void setup1() 
+void setup2() 
 {
 }
 
@@ -150,7 +152,7 @@ void loop()
 //  }
 }
 
-void loop1(void)
+void loop2(void)
 {
     //ble testing
 //  if (deviceConnected)

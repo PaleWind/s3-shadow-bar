@@ -22,12 +22,14 @@ class MyServerCallbacks: public BLEServerCallbacks {
       //bleconnected = 1;
       //      getBoxStatus(); // make a control group for getting info from the box
       Serial.println("connected!");
+      redrawScreen = true;
     };
 
     void onDisconnect(BLEServer* pServer) {
       deviceConnected = false;
       //bleconnected = 0;
       Serial.println("bye bye!");
+      redrawScreen = true;
     }
 };
 
