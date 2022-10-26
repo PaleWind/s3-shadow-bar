@@ -47,7 +47,7 @@ class MyWriteCallbacks: public BLECharacteristicCallbacks
           byte cmdGroup = numVal / 1000;
           byte cmdVal = numVal % 1000;
           Serial.println(cmdGroup);
-//          executeCommand(numVal);
+          //executeCommand(numVal);
           setStateCharacteristic();
           stateCharacteristic->notify();
         }

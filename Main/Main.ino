@@ -3,9 +3,6 @@
    /*///////*/#define DEVICE_NAME "ShadowBox_bar-02"///////
   ////////////////////////////////////////////////////////
 
-String ssid = "";
-String password = "";
-
 #include <Preferences.h>
 Preferences preferences;
 #include <esp_task_wdt.h>
@@ -45,11 +42,16 @@ bool redrawScreen = false;
 
 //State variables
 string stateStr = "";
-uint8_t opMode = 0;
-uint8_t effectBrightness = 200;
-int squelch = 10;                           // Squelch, cuts out low level sounds
-int gain = 10;                              // Gain, boosts input level
+String ssid = "";
+String password = "";
+int opMode = 0;
+int effectBrightness = 200;
+int squelch = 10;              // Squelch, cuts out low level sounds
+int gain = 10;                 // Gain, boosts input level
 int bpm = 35;
+int red = 0;
+int green = 0;
+int blue = 0;
 
   /////////////////////////////////////////////////////////////
  //////////// State machine //////////////////////////////////
@@ -89,8 +91,9 @@ uint8_t prevFFTValue[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 uint8_t barHeights[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 #include "Audio.h"
-#include "Bluetooth.h"
 #include "Wifi.h"
+#include "Cereal.h"
+#include "Bluetooth.h"
 #include "Colors.h"
 #include "Patterns.h"
 #include "Encoder.h"
@@ -165,7 +168,7 @@ void loop2(void)
 //    }
 //  }
 
-  static const unsigned long REFRESH_INTERVAL = 1000; // ms
+  static const unsigned long REFRESH_INTERVAL = 2000; // ms
   static unsigned long lastRefreshTime = 0;
   
   if(bluetoothOn && millis() - lastRefreshTime >= REFRESH_INTERVAL)

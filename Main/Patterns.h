@@ -63,6 +63,15 @@ void strobe()
   }
 }
 
+void solidColor()
+{
+  for (int i = 0; i < NUM_LEDS; i++)
+  {
+    leds[i] = CRGB(red, green, blue);
+  }
+  FastLED.show(); 
+}
+
 void twoBars() 
 {
   fillFFT();
@@ -220,6 +229,15 @@ void artnetMap()
   artnet.read();
 }
 
+void off()
+{
+  for (int i = 0; i < NUM_LEDS; i++)
+  {
+    leds[i] = CRGB::Black;
+  }
+  FastLED.show(); 
+}
+
   /////////////////////////////////////////////////////////////
  //////////////////////////Pattern List///////////////////////
 /////////////////////////////////////////////////////////////
@@ -227,12 +245,12 @@ void artnetMap()
 byte currentPattern = 0;
 typedef void (*patternList[])();
 patternList patterns = { 
+                         solidColor,
                          makeNoise, 
                          bounce, 
                          twoBars,
                          strobe,
                          breathe, 
-                         makeNoise,
                          scrollHighsUp,
                          scrollLowsUp,
                          scrollHighsDown,
@@ -245,12 +263,12 @@ patternList patterns = {
                          artnetDMX};
 
 char *patternNames[] = {
+                        "solidColor",
                         "makeNoise", 
                         "bounce", 
                         "twoBars",
                         "strobe",
                         "breathe", 
-                        "makeNoise",
                         "scrollHighsUp",
                         "scrollLowsUp",
                         "scrollHighsDown",
@@ -262,4 +280,4 @@ char *patternNames[] = {
                         "artnetMap",
                         "artnetDMX"};
 
-byte patternsListSize = sizeof(patterns);
+int patternsListSize = sizeof(patterns)/sizeof(patterns[0]);

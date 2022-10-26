@@ -48,6 +48,7 @@ bool DisconnectWifi()
   try
   {
     WiFi.disconnect();
+    WiFi.mode(WIFI_OFF);
     wifiConnected = false;   
     return true;
   } 

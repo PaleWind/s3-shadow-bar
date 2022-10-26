@@ -27,7 +27,7 @@ void IRAM_ATTR rotary()
 class MenuInterface {
      
   public:
-  char* Name;
+  const char* Name;
   MenuInterface(char* menuName){
     Name = menuName;
   }
@@ -43,7 +43,7 @@ class MenuInterface {
   virtual bool IsComposite() const {
     return false;
   }
-  virtual char* GetName() {
+  virtual const char* GetName() {
     return this->Name;
   }
   virtual void Display(){}
@@ -55,6 +55,8 @@ MenuInterface* currentMenuObj = new MenuInterface("name");
 
 void drawMenuDown()
 { 
+  rotationCounter +=1;
+  if (rotationCounter >= menuItemsCount) { rotationCounter--; }
   u8x8.clear();
   u8x8.drawString(5, 0, currentMenuObj->Name);
   if (menuItemsCount > numRows)
@@ -81,6 +83,8 @@ void drawMenuDown()
 
 void drawMenuUp() 
 { 
+  rotationCounter -=1;
+  if (rotationCounter < 0) { rotationCounter = 0; }
   u8x8.clear();
   u8x8.drawString(5, 0, currentMenuObj->Name);
 
@@ -108,16 +112,71 @@ void drawMenuUp()
   }
 }
 
-void drawParamEdit(/*int* parameterPointer,*/ char* parameterName)
+const char* drawNumbers(int** param) 
+{
+  std::stringstream ss;
+  ss << std::setw ( 3 ) << param;
+  auto x = ss.str();
+  const char* count = x.c_str(); 
+  return count;
+  //u8x8.drawString(2, 2, count);
+//  Serial.println(count);
+}
+const char* drawNumbers(int* param) 
+{
+  std::stringstream ss;
+  ss << std::setw ( 3 ) << param;
+  auto x = ss.str();
+  const char* count = x.c_str(); 
+  return count;
+  //u8x8.drawString(2, 2, count);
+//  Serial.println(count);
+}
+
+int* currentEditParam;
+int* currentEditParamMax;
+int* currentEditParamIncrementAmt;
+
+void increaseIntParam()
+{
+  *currentEditParam += *currentEditParamIncrementAmt;
+  if (*currentEditParam > *currentEditParamMax) { *currentEditParam = *currentEditParamMax; }
+  u8x8.clearLine(4);
+  u8x8.drawString(6, 4, to_string(*currentEditParam).c_str());
+  Serial.println((long)*currentEditParam);
+}
+
+void decreaseIntParam()
+{
+  *currentEditParam -= *currentEditParamIncrementAmt;
+  if (*currentEditParam < 0) { *currentEditParam = 0; }
+  u8x8.clearLine(4);
+  u8x8.drawString(6, 4, to_string(*currentEditParam).c_str());
+  Serial.println((long)*currentEditParam);
+}
+
+
+byte currentRotaryMethod = 0;
+typedef void (*rotaryMethodList[])();
+rotaryMethodList rotaryUpMethods= { 
+                         drawMenuUp,
+                         decreaseIntParam};
+                         
+rotaryMethodList rotaryDownMethods= { 
+                         drawMenuDown,
+                         increaseIntParam};
+                         
+void drawParamEdit(/*int* parameterPointer,*/ const char* parameterName)
 { 
   u8x8.clear();
   u8x8.drawString(5, 0, parameterName);
 
 }
 
-    ////////////////////////////////////////////////////////////////////
-   /////////////////////////MENU///////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   /////////////////////////MENU////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class Page : public MenuInterface { //Leaf
 public:
@@ -135,28 +194,51 @@ public:
   using MenuInterface::MenuInterface;
   void Display() override
   {
-    //drawModeSelect();
-    //special implementation to pick modes
-    //drawParamEdit(parameterPointer, parameterName);
     opMode = rotationCounter - 1;
   }
 };
 
-class audioSettingsPage : public MenuInterface { //Leaf
+class IntegerSettingsPage : public MenuInterface { //Leaf
 public:
-  using MenuInterface::MenuInterface;
-  //int* parameterPointer;
-  char* GetName() override
+  //using MenuInterface::MenuInterface;
+  int *parameterPointer;
+  int parameterMax;
+  int incrementAmount;
+  IntegerSettingsPage(char* menuName, int *pointer, int paramMax, int incrementAmt) : MenuInterface{ menuName }, parameterPointer{ pointer }, parameterMax{ paramMax }, incrementAmount{ incrementAmt } {
+     parameterPointer = pointer;
+     parameterMax = paramMax;
+     incrementAmount = incrementAmt;
+  }
+  const char* GetName() override
   {
-
+    //return (this->Name);// + to_string(*parameterPointer)).c_str();
+    return(Name);
   }
   void Display() override
   {
+    u8x8.clear();
+    // save old rotary position?
     
+    if (currentRotaryMethod == 0)
+    {
+      currentEditParam = parameterPointer;
+      currentEditParamMax = &parameterMax;
+      currentEditParamIncrementAmt = &incrementAmount;
+      //Serial.println(*parameterPointer);
+      currentRotaryMethod = 1;
+      u8x8.drawString(4, 2, this->Name);
+      u8x8.drawString(6, 4, to_string(*currentEditParam).c_str());
+    } 
+    else if (currentRotaryMethod == 1)
+    {
+        currentRotaryMethod = 0;
+        drawMenuDown();
+    }
   }
 };
 
-class wifiSettingsPage : public MenuInterface { //Leaf
+
+class WifiSettingsPage : public MenuInterface { //Leaf
 public:
   using MenuInterface::MenuInterface;
   //int* parameterPointer;
@@ -190,7 +272,7 @@ public:
 };
 
 
-class bluetoothSettingsPage : public MenuInterface { //Leaf
+class BluetoothSettingsPage : public MenuInterface { //Leaf
 public:
   using MenuInterface::MenuInterface;
   //int* parameterPointer;
@@ -230,8 +312,6 @@ class Menu : public MenuInterface {
     } 
     void Display() override 
     {
-//      Serial.print("size");
-//      Serial.println(pageList.size());
       currentMenuObj->pageList = pageList;
       if (this->Name != "Home") { currentMenuObj->pageList.insert(currentMenuObj->pageList.begin(), this->parent); }
       currentMenuObj->Name = Name;
@@ -247,33 +327,60 @@ class Menu : public MenuInterface {
 void setupMenu()
 {
   Menu *menu = new Menu("Home");
-  Menu *modes = new Menu("Modes");
+  Menu *modes = new Menu("Mode");
+  Menu *color = new Menu("Color");
   Menu *settings = new Menu("Settings");
 
   for (int i=0; i<patternsListSize; i++)
   {
     modes->AddMenuItem(new ModePage(patternNames[i]));
+    Serial.println(patternNames[i]);
   }
 
-  Menu *wifiMenu = new Menu("Wifi");
-  wifiSettingsPage *wifiSettings = new wifiSettingsPage("Wifi");
-  wifiMenu->AddMenuItem(wifiSettings);
+  //color menus
+  Menu *rgbSettingsMenu = new Menu("RGB");
+  IntegerSettingsPage *redSettingsPage   = new IntegerSettingsPage("Red ",   &red,  255, 1);
+  IntegerSettingsPage *greenSettingsPage = new IntegerSettingsPage("Green ", &green,255, 1);
+  IntegerSettingsPage *blueSettingsPage  = new IntegerSettingsPage("Blue ",  &blue, 255, 1);
+  rgbSettingsMenu->AddMenuItem(redSettingsPage);
+  rgbSettingsMenu->AddMenuItem(greenSettingsPage);
+  rgbSettingsMenu->AddMenuItem(blueSettingsPage);
 
-  Menu *bluetoothMenu = new Menu("Bluetooth");
-  bluetoothSettingsPage *bluetoothSettings = new bluetoothSettingsPage("Bluetooth");
-  bluetoothMenu->AddMenuItem(bluetoothSettings);
+  color->AddMenuItem(rgbSettingsMenu);
+  
+  Menu *audioSettingsMenu = new Menu("Audio");
+  IntegerSettingsPage *gainSettingsPage = new IntegerSettingsPage("Gain  ", &gain, 30, 1);
+  audioSettingsMenu->AddMenuItem(gainSettingsPage);
 
-  settings->AddMenuItem(wifiMenu);
-  settings->AddMenuItem(bluetoothMenu);
-  //settings->AddMenuItem(setting3);
+  IntegerSettingsPage *squelchSettingsPage = new IntegerSettingsPage("Squelch  ", &squelch, 30, 1);
+  audioSettingsMenu->AddMenuItem(squelchSettingsPage);
+  
+  Menu *wifiSettingsMenu = new Menu("Wifi");
+  WifiSettingsPage *wifiSettingsPage = new WifiSettingsPage("Wifi");
+  wifiSettingsMenu->AddMenuItem(wifiSettingsPage);
+
+  Menu *bluetoothSettingsMenu = new Menu("Bluetooth");
+  BluetoothSettingsPage *bluetoothSettingsPage = new BluetoothSettingsPage("Bluetooth");
+  bluetoothSettingsMenu->AddMenuItem(bluetoothSettingsPage);
+
+  IntegerSettingsPage *brightnessSettingsPage = new IntegerSettingsPage("Brightness ", &effectBrightness, 250, 10);
+  settings->AddMenuItem(brightnessSettingsPage);
+
+  IntegerSettingsPage *bpmSettingsPage = new IntegerSettingsPage("BPM ", &bpm, 250, 1);
+  settings->AddMenuItem(bpmSettingsPage);
+  
+  settings->AddMenuItem(audioSettingsMenu);
+  settings->AddMenuItem(wifiSettingsMenu);
+  settings->AddMenuItem(bluetoothSettingsMenu);
 
   menu->AddMenuItem(modes);
+  menu->AddMenuItem(color);
   menu->AddMenuItem(settings);
   
   menu->Display();
 }
 
-/////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int8_t checkRotaryEncoder()
 {
@@ -297,17 +404,17 @@ int8_t checkRotaryEncoder()
     if (lrsum == 4)/* encoder in the neutral state - clockwise rotation*/
     {
         lrsum = 0;
-        rotationCounter +=1;
-        if (rotationCounter >= menuItemsCount) { rotationCounter--; }
-        drawMenuDown();
+
+        //drawMenuDown();
+        rotaryDownMethods[currentRotaryMethod]();
         return 1;
     }
     if (lrsum == -4) /* encoder in the neutral state - anti-clockwise rotation*/
     {
         lrsum = 0;
-        rotationCounter -=1;
-        if (rotationCounter < 0) { rotationCounter = 0; }
-        drawMenuUp();
+
+        //drawMenuUp();
+        rotaryUpMethods[currentRotaryMethod]();
         return -1;
     }
     // An impossible rotation has been detected - ignore the movement
