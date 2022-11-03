@@ -1,7 +1,8 @@
  
-     ////////////////////////////////////////////////////////
-   /*///////*/#define DEVICE_NAME "ShadowBox_bar-02"///////
   ////////////////////////////////////////////////////////
+ /*///////*/#define DEVICE_NAME "ShadowBox_bar-01"///////
+////////////////////////////////////////////////////////
+                                 
 
 #include <Preferences.h>
 Preferences preferences;
@@ -17,10 +18,16 @@ Preferences preferences;
 using namespace std;
 
 //OLED
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 #include <SPI.h>
 #include <Wire.h>
-#include <U8x8lib.h>
-U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(/* reset=*/ U8X8_PIN_NONE);   
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+ #define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
 bool redrawScreen = false;
 
 //Bluetooth
@@ -35,8 +42,11 @@ bool redrawScreen = false;
 
 //LEDs
 #include <FastLED.h>
-#define NUM_LEDS  32
+#define NUM_LEDS  144
 #define HALF      NUM_LEDS/2
+CRGB leds[NUM_LEDS];
+int patternsListSize;
+int paletteSize = 0;
 
 #define WDT_TIMEOUT 999999
 
@@ -44,7 +54,9 @@ bool redrawScreen = false;
 string stateStr = "";
 String ssid = "";
 String password = "";
+char* ipAddress = "";
 int opMode = 0;
+int artnetMode = 0;
 int effectBrightness = 200;
 int squelch = 10;              // Squelch, cuts out low level sounds
 int gain = 10;                 // Gain, boosts input level
@@ -52,6 +64,8 @@ int bpm = 35;
 int red = 0;
 int green = 0;
 int blue = 0;
+int currentPalette = 6;
+int currentArtnetMode = 0;
 
   /////////////////////////////////////////////////////////////
  //////////// State machine //////////////////////////////////
@@ -60,9 +74,16 @@ BLECharacteristic* stateCharacteristic = NULL;
 void setStateCharacteristic()
 {
   // bundle the state params into a delimited string
-  stateStr = to_string(opMode) + "," + to_string(gain) + "," + to_string(squelch) + "," + to_string(effectBrightness);
+  stateStr = to_string(opMode) + ","
+           + to_string(gain) + ","
+           + to_string(squelch) + ","
+           + to_string(effectBrightness) + ","
+           + to_string(artnetMode) + ","
+           + to_string(bpm) + ","
+           + to_string(bpm) + ",";
            //add more state variables
   Serial.println(stateStr.c_str());
+  Serial.println(stateStr.length());
   stateCharacteristic->setValue(stateStr.c_str());
 }
 
@@ -115,9 +136,23 @@ void setup(void)
   esp_task_wdt_init(WDT_TIMEOUT, false); //disable watchdog panic so ESP32 restarts
   Serial.begin(115200);
   Serial.println("core 0 setup");
-  
-  u8x8.begin();
-  u8x8.setFont(u8x8_font_amstrad_cpc_extended_f);
+
+//gfx
+  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;); // Don't proceed, loop forever
+  }
+    display.setTextSize(1); // Draw 2X-scale text
+    display.setTextColor(SSD1306_WHITE);
+    // Clear the buffer
+    display.clearDisplay();
+//    for(int16_t i=0; i<display.height()/2; i+=2) {
+//    display.drawRect(i, i, display.width()-2*i, display.height()-2*i, SSD1306_WHITE);
+//    display.display(); // Update screen with each newly-drawn rectangle
+//    delay(1);
+//  }
+//
+//  delay(1000);
   
   preferences.begin("credentials", false); 
   ssid = preferences.getString("ssid", "NETGEAR72");
@@ -126,12 +161,15 @@ void setup(void)
   FastLED.addLeds<LED_TYPE, DATA_PIN, CLK_PIN, COLOR_ORDER, DATA_RATE_MHZ(12)>(leds, NUM_LEDS);
   FastLED.setBrightness(200);
   
+  patternsListSize = sizeof(patterns)/sizeof(patterns[0]);
+  paletteSize = sizeof(palettes)/sizeof(palettes[0]);
+
   setupEncoder();
   setupMenu();
   setupAudio();
   setupBluetooth();
   //ConnectWifi();
-  
+    
   xTaskCreatePinnedToCore( /* Enable second core*/
   esploop1,               /* Task function. */
   "loop2",                /* name of task. */
@@ -158,15 +196,16 @@ void loop()
 void loop2(void)
 {
     //ble testing
-//  if (deviceConnected)
-//  {
-//    EVERY_N_MILLISECONDS (3000)
-//    {
-//      gain++;
-//      setStateCharacteristic();
-//      stateCharacteristic->notify();
-//    }
-//  }
+
+  EVERY_N_MILLISECONDS (2000)
+  {
+    if (bluetoothOn && deviceConnected)
+    {
+      
+      setStateCharacteristic();
+      stateCharacteristic->notify();
+    }
+  }
 
   static const unsigned long REFRESH_INTERVAL = 2000; // ms
   static unsigned long lastRefreshTime = 0;
@@ -179,11 +218,18 @@ void loop2(void)
 //    u8x8.drawString(0, 4, deviceConnected ? "connected" : "not connected");
     if (!deviceConnected)
     {
+      BLEDevice::startAdvertising();
       pServer->startAdvertising(); // restart advertising
       Serial.printf("hey, wanna smoke some weed? on core %d", xPortGetCoreID());Serial.println();
       oldDeviceConnected = deviceConnected;
     }  
   }
+  else if(!bluetoothOn)
+  {
+    BLEDevice::stopAdvertising();
+    deviceConnected = false;
+  }
+
   
   updateScreen();
   //u8x8.drawString(0, 5, std::to_string(rotationCounter).c_str());

@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		515989C12895B5FC005750BC /* BleController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 515989C02895B5FC005750BC /* BleController.swift */; };
 		515989C42895CE07005750BC /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 515989C32895CE07005750BC /* CoreBluetooth.framework */; };
+		51623C46291014EA00D16E8B /* WifiSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51623C45291014EA00D16E8B /* WifiSettingsView.swift */; };
+		51623C482910237300D16E8B /* ModeSelectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51623C472910237300D16E8B /* ModeSelectView.swift */; };
 		5175838328958FC6006F4992 /* bluetooth_saberApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5175838228958FC6006F4992 /* bluetooth_saberApp.swift */; };
 		5175838528958FC6006F4992 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5175838428958FC6006F4992 /* ContentView.swift */; };
 		5175838728958FC7006F4992 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5175838628958FC7006F4992 /* Assets.xcassets */; };
@@ -21,6 +23,8 @@
 		515989BF2895B1A1005750BC /* bluetooth-saber-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "bluetooth-saber-Info.plist"; sourceTree = SOURCE_ROOT; };
 		515989C02895B5FC005750BC /* BleController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BleController.swift; sourceTree = "<group>"; };
 		515989C32895CE07005750BC /* CoreBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreBluetooth.framework; path = System/Library/Frameworks/CoreBluetooth.framework; sourceTree = SDKROOT; };
+		51623C45291014EA00D16E8B /* WifiSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WifiSettingsView.swift; sourceTree = "<group>"; };
+		51623C472910237300D16E8B /* ModeSelectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModeSelectView.swift; sourceTree = "<group>"; };
 		5175837F28958FC6006F4992 /* bluetooth saber.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "bluetooth saber.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5175838228958FC6006F4992 /* bluetooth_saberApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = bluetooth_saberApp.swift; sourceTree = "<group>"; };
 		5175838428958FC6006F4992 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -78,6 +82,8 @@
 				5175838B28958FC7006F4992 /* Persistence.swift */,
 				5175838D28958FC7006F4992 /* bluetooth_saber.xcdatamodeld */,
 				5175838828958FC7006F4992 /* Preview Content */,
+				51623C45291014EA00D16E8B /* WifiSettingsView.swift */,
+				51623C472910237300D16E8B /* ModeSelectView.swift */,
 			);
 			path = "bluetooth saber";
 			sourceTree = "<group>";
@@ -161,7 +167,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				5175838C28958FC7006F4992 /* Persistence.swift in Sources */,
+				51623C482910237300D16E8B /* ModeSelectView.swift in Sources */,
 				515989C12895B5FC005750BC /* BleController.swift in Sources */,
+				51623C46291014EA00D16E8B /* WifiSettingsView.swift in Sources */,
 				5175838528958FC6006F4992 /* ContentView.swift in Sources */,
 				5175838F28958FC7006F4992 /* bluetooth_saber.xcdatamodeld in Sources */,
 				5175838328958FC6006F4992 /* bluetooth_saberApp.swift in Sources */,

@@ -9,8 +9,6 @@
 
 std::deque<uint8_t> scroll(NUM_LEDS, 0);
 
-CRGB leds[NUM_LEDS];
-
 bool lightOn = true;
 byte strobeAmt = 0;
 CRGB color = CRGB::Black;
@@ -85,12 +83,12 @@ void twoBars()
   for (int i=0; i<lows; i++)
   { 
     uint8_t index = inoise8(i*20, millis()/5+i*20);               
-    leds[i] = ColorFromPalette(palettes[currentPalette], index, 250, LINEARBLEND);   
+    leds[i] = ColorFromPalette(palettes[currentPalette], index, effectBrightness, LINEARBLEND);   
   }
   for (int i=highs; i>0; i--)
   {
     uint8_t index = inoise8(i*20, millis()/5+i*20);                
-    leds[NUM_LEDS - i] = ColorFromPalette(palettes[currentPalette], index, 250, LINEARBLEND);
+    leds[NUM_LEDS - i] = ColorFromPalette(palettes[currentPalette], index, effectBrightness, LINEARBLEND);
   }
   FastLED.show(); 
 }
@@ -219,14 +217,22 @@ void scrollOutTwo()
   showScroll();
 }
 
-void artnetDMX()
-{
-  artnet.read();
-}
-
 void artnetMap()
 {
-  artnet.read();
+  if (currentArtnetMode != 0) { currentArtnetMode = 0; }
+  if (wifiOn && wifiConnected)
+  {
+    artnet.read();
+  }
+}
+
+void artnetDMX()
+{
+  if (currentArtnetMode != 1) { currentArtnetMode = 1; }
+  if (wifiOn && wifiConnected)
+  {
+    artnet.read();
+  }
 }
 
 void off()
@@ -263,21 +269,19 @@ patternList patterns = {
                          artnetDMX};
 
 char *patternNames[] = {
-                        "solidColor",
-                        "makeNoise", 
-                        "bounce", 
-                        "twoBars",
-                        "strobe",
-                        "breathe", 
-                        "scrollHighsUp",
-                        "scrollLowsUp",
-                        "scrollHighsDown",
-                        "scrollLowsDown",
-                        "scrollHighsOut", 
+                        "Solid Color",
+                        "Make Noise", 
+                        "Bounce", 
+                        "Two Bars",
+                        "Strobe",
+                        "Breathe", 
+                        "Scrl Up HP",
+                        "Scrl Up LP",
+                        "Scrl Down HP",
+                        "Scrl Down LP",
+                        "Scrl Out HP", 
                         "scrollLowsDown",
                         "scrollOut", 
                         "scrollOutTwo",
                         "artnetMap",
                         "artnetDMX"};
-
-int patternsListSize = sizeof(patterns)/sizeof(patterns[0]);

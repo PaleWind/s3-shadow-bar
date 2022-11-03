@@ -12,6 +12,9 @@ struct ContentView: View {
     
     @StateObject var bleController = BleManager()
     @State var scanning = false
+    var connectionTimeOut = 50
+    let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    //let timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true, block: { _ in  }
     
     var body: some View {
         
@@ -34,6 +37,11 @@ struct ContentView: View {
                         //.padding(.trailing, 30)
                       Text(scanning ? "Stop" : "Scan")
                 }
+            Spacer()
+            
+            Button(action: {bleController.sendFile(name: "ShadowBox_bar-01")}) {
+                Text("try it")
+            }
       /*      Button("Scan") {
                 bleController.ScanAndConnect()
             }
@@ -41,22 +49,35 @@ struct ContentView: View {
             Button("Stop Scan") {
                 bleController.StopScan()
             }*/
+        
+            
             NavigationView {
                 List(bleController.myPeripherals) { saber in
                     NavigationLink (destination: listedPeripheralsView(data: saber)) {
                         Text(saber.name)
                     }
                 }
-            }
-            .environmentObject(bleController)
+            }.environmentObject(bleController)
+                .onReceive(timer) { time in
+                    for saber in bleController.myPeripherals {
+                        if saber.isConnected {
+                            saber.connectionTimeOut -= 1
+                            if  saber.connectionTimeOut <= 0 {
+                                bleController.disconnectPeriph(saber)
+                                bleController.removePeriph(saber)
+                            }
+                        }
+                    }
+                }
         }
+
     }
 }
 
 struct listedPeripheralsView: View {
 
     @EnvironmentObject var bleController: BleManager
-    @StateObject var data: Saber	
+    @ObservedObject var data: Saber
     
     var body: some View {
         VStack {
@@ -71,53 +92,67 @@ struct listedPeripheralsView: View {
                         Text(data.isConnected ? "Disconnect" : "Connect")
                     }
             }
-            if data.periph.state == CBPeripheralState.connected{
-                
-                Text("Name: \(data.periph.name!)")
-//                if let state = getNumbers(data.periph.services?.first(where: {$0.uuid == UUIDs.STATE_SERVICE_UUID})?.characteristics?.first?.value){
-//                    ForEach(0 ..< state.count, id: \.self) { value in
-//                        Text("\(value) : \(state[value])")
+//            if data.periph.state == CBPeripheralState.connected{
+//
+//                Text("Name: \(data.periph.name!)")
+//                    .font(.largeTitle)
+//                    .foregroundColor(.white)
+//                    .padding(.horizontal, 20)
+//                    .padding(.vertical, 5)
+//                    .background(.black.opacity(0.75))
+//                    .clipShape(Capsule())
+////                if let state = getNumbers(data.periph.services?.first(where: {$0.uuid == UUIDs.STATE_SERVICE_UUID})?.characteristics?.first?.value){
+////                    ForEach(0 ..< state.count, id: \.self) { value in
+////                        Text("\(value) : \(state[value])")
+////                    }
+////                }
+//
+//                VStack {
+//                    Text("Time: \(data.connectionTimeOut)")
+//                        .font(.largeTitle)
+//                        .foregroundColor(.white)
+//                        .padding(.horizontal, 20)
+//                        .padding(.vertical, 5)
+//                        .background(.black.opacity(0.75))
+//                        .clipShape(Capsule())
+//                }
+//
+//                VStack {
+//                    HStack {
+//                        Text("Gain ")
+//                        Slider(value: $data.gain, in: 0...30, step: 1) { editing in
+//                            data.writeOutgoingValue("\(1000 + data.gain)")
+//                        }
+//                    }
+//                    HStack {
+//                        Text("Squelch ")
+//                        Slider(value: $data.squelch, in: 0...30, step: 1) { editing in
+//                            data.writeOutgoingValue("\(2000 + data.squelch)")
+//                        }
+//                    }
+//                    HStack {
+//                        Text("Brightness ")
+//                        Slider(value: $data.brightness, in: 0...250, step: 1) { editing in
+//                            data.writeOutgoingValue("\(4000 + data.brightness)")
+//                        }
 //                    }
 //                }
-                VStack {
-                    HStack {
-                        Text("Gain ")
-                        Slider(value: $data.gain, in: 0...30, step: 1) { editing in
-                            data.writeOutgoingValue("\(1000 + data.gain)")
-                        }
-                    }
-                    HStack {
-                        Text("Squelch ")
-                        Slider(value: $data.squelch, in: 0...30, step: 1) { editing in
-                            data.writeOutgoingValue("\(2000 + data.squelch)")
-                        }
-                    }
-                }
-                HStack {
-                    Button("Mode") {
-                        data.writeOutgoingValue("3000")
-                    }
-                    Button("Color") {
-                        data.writeOutgoingValue("4000")
-                    }
-                }
-                HStack {
-                    Text("SSID")
-                    Spacer()
-                    TextField(
-                        getCharValue(data.periph.services?.first(where: {$0.uuid == UUIDs.SSID_SERVICE_UUID})?.characteristics?.first?.value),
-                        text: $data.ssid
-                    )
-                    .onSubmit {
-                        print(data.ssid)
-                        data.writeOutgoingSsid(data.ssid)
-                    }
-                    .textInputAutocapitalization(.never)
-                    .disableAutocorrection(true)
-                    .border(.secondary)
-                }
-                Text(getCharValue(data.periph.services?.first(where: {$0.uuid == UUIDs.SSID_SERVICE_UUID})?.characteristics?.first?.value))
-            }
+//                HStack {
+////                    Button("Mode") {
+////                        data.writeOutgoingValue("3000")
+////                    }
+//                    Button("Color") {
+//                        data.writeOutgoingValue("4000")
+//                    }
+//                }
+//
+//                NavigationLink(destination: WifiSettingsView(data: data), label: { Text("Wifi Settings") })
+//
+//                NavigationLink(destination: ModeSelectView(data: data), label: { Text("Mode Select") })
+//
+
+                
+        //    }
         }
     }
 }

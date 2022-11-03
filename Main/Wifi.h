@@ -2,7 +2,6 @@ const int numberOfChannels = NUM_LEDS * 3; // Total number of channels you want 
 const int startUniverse = 0; // CHANGE FOR YOUR SETUP most software this is 1, some software send out artnet first universe as 0.
 byte startChannel = 0;
 byte artnetBrightness = 0;
-uint8_t artnetMode = 1;
 int previousDataLength = 0;
 
 bool wifiOn = false;
@@ -10,67 +9,19 @@ bool wifiConnected  =false;
 std::promise<bool> mypromise;
 ArtnetWifi artnet;
 
-void ConnectWifi(void)
-{
-  WiFi.begin(ssid.c_str(), password.c_str());
-  Serial.println("");
-  Serial.println("Connecting to WiFi");
-  unsigned long lastConnectionRequest = millis();
-  // Wait for connection
-  Serial.print("Connecting");
-  while (millis() - lastConnectionRequest < 10000)
-  {
-    if (WiFi.status() == WL_CONNECTED)
-    {
-      wifiConnected = true;
-      break;
-    }
-  }
-  if (wifiConnected == true)
-  {
-    Serial.println("");
-    Serial.print("Connected to ");
-    Serial.println(ssid);
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
-    artnet.begin();
-  }
-  else
-  {
-    Serial.println("");
-    Serial.println("Connection failed.");
-  }
-  mypromise.set_value(wifiConnected);
-}
-
-bool DisconnectWifi()
-{
-  try
-  {
-    WiFi.disconnect();
-    WiFi.mode(WIFI_OFF);
-    wifiConnected = false;   
-    return true;
-  } 
-  catch (...)
-  {
-    return false;
-  }
-}
-
 void artnetPixelMap(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* data)
 {
   // read universe and put into the right part of the display buffer
-//  for (int i = 0; i < length / 3; i++)
-//  {
-//    int led = i + (universe - startUniverse) * (previousDataLength / 3);
-//    if (led < NUM_LEDS)
-//    {
-//      leds[led] = CRGB(data[i * 3], data[i * 3 + 1], data[i * 3 + 2]);
-//    }
-//  }
-//  previousDataLength = length;  
-//  FastLED.show();   
+  for (int i = 0; i < length / 3; i++)
+  {
+    int led = i + (universe - startUniverse) * (previousDataLength / 3);
+    if (led < NUM_LEDS)
+    {
+      leds[led] = CRGB(data[i * 3], data[i * 3 + 1], data[i * 3 + 2]);
+    }
+  }
+  previousDataLength = length;  
+  FastLED.show();   
 }
 
 void artnetFourChannel(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* data)
@@ -111,4 +62,73 @@ void artnetFourChannel(uint16_t universe, uint16_t length, uint8_t sequence, uin
 //  }
 //  currentPattern = 0;
 //  FastLED.show();
+}
+
+
+typedef void (*artnetModes[])(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* data);
+artnetModes artnetModeList = {artnetPixelMap, artnetFourChannel};
+
+void artnetPacketReceive(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* data)
+{
+  artnetModeList[currentArtnetMode](universe, length, sequence, data); 
+}
+
+void ConnectWifi(void)
+{
+  WiFi.begin(ssid.c_str(), password.c_str());
+  Serial.println("");
+  Serial.println("Connecting to WiFi");
+  unsigned long lastConnectionRequest = millis();
+  // Wait for connection
+  Serial.print("Connecting");
+  while (millis() - lastConnectionRequest < 10000)
+  {
+    if (WiFi.status() == WL_CONNECTED)
+    {
+      wifiConnected = true;
+      break;
+    }
+  }
+  if (wifiConnected == true)
+  {
+    Serial.println("");
+    Serial.print("Connected to ");
+    Serial.println(ssid);
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
+    artnet.begin();
+    artnet.setArtDmxCallback(artnetPacketReceive); 
+  }
+  else
+  {
+    Serial.println("");
+    Serial.println("Connection failed.");
+  }
+  mypromise.set_value(wifiConnected);
+}
+
+bool DisconnectWifi()
+{
+  try
+  {
+    WiFi.disconnect();
+    WiFi.mode(WIFI_OFF);
+    wifiConnected = false;   
+    return true;
+  } 
+  catch (...)
+  {
+    return false;
+  }
+}
+
+
+
+
+String IpAddressToString(const IPAddress& ipAddress)
+{
+    return String(ipAddress[0]) + String(".") +
+           String(ipAddress[1]) + String(".") +
+           String(ipAddress[2]) + String(".") +
+           String(ipAddress[3]);
 }

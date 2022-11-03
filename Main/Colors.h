@@ -95,5 +95,4 @@ const CRGBPalette16 palettes[] = {
     CloudColors_p,
     PartyColors_p,
   };
-int paletteSize = sizeof(palettes)/sizeof(palettes[0]);
-int currentPalette = 5;
+  

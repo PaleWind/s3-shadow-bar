@@ -1,13 +1,19 @@
-#define STATE_SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
-#define SSID_SERVICE_UUID         "3c662598-3367-489d-ad3f-484ec8970642"
-#define PASSWORD_SERVICE_UUID     "2d804258-a9ee-4f2d-afe6-eb005aae21ad"
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define WRITE_CHARACTERISTIC_UUID "opb5483e-36e1-4688-b7f5-ea07361b26a8"
-#define SSID_CHARACTERISTIC_UUID  "id5fb0c0-0df9-11ed-861d-0242ac120002"
-#define PASSWORD_CHARACTERISTIC_UUID "6a7b8a24-4594-42eb-b721-62d0275123b5"
-#define STATE_CHARACTERISTIC_UUID "85c2a1b1-c6ae-47dd-8793-cd84f4f0a745"
+#define STATE_SERVICE_UUID            "172b0aa9-9d49-42c3-a5f7-5eec258b7342"
+#define SSID_SERVICE_UUID             "172b0aa9-9723-45c6-94bc-78102bbc9961"
+#define PASSWORD_SERVICE_UUID         "0d603309-3610-457e-abdd-b0e12057bdab"
 
-bool bluetoothOn = false;
+#define WRITE_CHARACTERISTIC_UUID     "814b9ce9-3114-4eed-96d4-f90b5b6155fd"
+#define SSID_CHARACTERISTIC_UUID      "ecc6ba40-b056-4836-a81b-f2543977caa1"
+#define PASSWORD_CHARACTERISTIC_UUID  "b85b5cc4-22cf-4210-87f6-e26a6706ca83"
+#define STATE_CHARACTERISTIC_UUID     "724bfada-d204-4d47-ac9c-77cb60c12011"
+
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool bluetoothOn = true;
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 
@@ -19,15 +25,12 @@ BLECharacteristic* passwordCharacteristic = NULL;
 class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
       deviceConnected = true;
-      //bleconnected = 1;
-      //      getBoxStatus(); // make a control group for getting info from the box
       Serial.println("connected!");
       redrawScreen = true;
     };
 
     void onDisconnect(BLEServer* pServer) {
       deviceConnected = false;
-      //bleconnected = 0;
       Serial.println("bye bye!");
       redrawScreen = true;
     }
@@ -47,7 +50,7 @@ class MyWriteCallbacks: public BLECharacteristicCallbacks
           byte cmdGroup = numVal / 1000;
           byte cmdVal = numVal % 1000;
           Serial.println(cmdGroup);
-          //executeCommand(numVal);
+          executeCommand(numVal);
           setStateCharacteristic();
           stateCharacteristic->notify();
         }
@@ -160,5 +163,5 @@ void setupBluetooth()
   pAdvertising->addServiceUUID(PASSWORD_SERVICE_UUID);
   pAdvertising->setScanResponse(false);
   pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
-  BLEDevice::startAdvertising();  //pAdvertising->start();
+  BLEDevice::stopAdvertising();  //pAdvertising->start();
 }
