@@ -12,7 +12,6 @@ struct ContentView: View {
     
     @StateObject var bleController = BleManager()
     @State var scanning = false
-    var connectionTimeOut = 50
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     //let timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true, block: { _ in  }
     
@@ -37,11 +36,7 @@ struct ContentView: View {
                         //.padding(.trailing, 30)
                       Text(scanning ? "Stop" : "Scan")
                 }
-            Spacer()
-            
-            Button(action: {bleController.sendFile(name: "ShadowBox_bar-01")}) {
-                Text("try it")
-            }
+
       /*      Button("Scan") {
                 bleController.ScanAndConnect()
             }
@@ -58,17 +53,17 @@ struct ContentView: View {
                     }
                 }
             }.environmentObject(bleController)
-                .onReceive(timer) { time in
-                    for saber in bleController.myPeripherals {
-                        if saber.isConnected {
-                            saber.connectionTimeOut -= 1
-                            if  saber.connectionTimeOut <= 0 {
-                                bleController.disconnectPeriph(saber)
-                                bleController.removePeriph(saber)
-                            }
+            .onReceive(timer) { time in
+                for saber in bleController.myPeripherals {
+                    if saber.isConnected {
+                        saber.connectionTimeOut -= 1
+                        if  saber.connectionTimeOut <= 0 {
+                            bleController.disconnectPeriph(saber)
+                            bleController.removePeriph(saber)
                         }
                     }
                 }
+            }
         }
 
     }
@@ -92,67 +87,85 @@ struct listedPeripheralsView: View {
                         Text(data.isConnected ? "Disconnect" : "Connect")
                     }
             }
-//            if data.periph.state == CBPeripheralState.connected{
-//
-//                Text("Name: \(data.periph.name!)")
-//                    .font(.largeTitle)
-//                    .foregroundColor(.white)
-//                    .padding(.horizontal, 20)
-//                    .padding(.vertical, 5)
-//                    .background(.black.opacity(0.75))
-//                    .clipShape(Capsule())
-////                if let state = getNumbers(data.periph.services?.first(where: {$0.uuid == UUIDs.STATE_SERVICE_UUID})?.characteristics?.first?.value){
-////                    ForEach(0 ..< state.count, id: \.self) { value in
-////                        Text("\(value) : \(state[value])")
-////                    }
-////                }
-//
-//                VStack {
-//                    Text("Time: \(data.connectionTimeOut)")
-//                        .font(.largeTitle)
-//                        .foregroundColor(.white)
-//                        .padding(.horizontal, 20)
-//                        .padding(.vertical, 5)
-//                        .background(.black.opacity(0.75))
-//                        .clipShape(Capsule())
-//                }
-//
-//                VStack {
-//                    HStack {
-//                        Text("Gain ")
-//                        Slider(value: $data.gain, in: 0...30, step: 1) { editing in
-//                            data.writeOutgoingValue("\(1000 + data.gain)")
-//                        }
-//                    }
-//                    HStack {
-//                        Text("Squelch ")
-//                        Slider(value: $data.squelch, in: 0...30, step: 1) { editing in
-//                            data.writeOutgoingValue("\(2000 + data.squelch)")
-//                        }
-//                    }
-//                    HStack {
-//                        Text("Brightness ")
-//                        Slider(value: $data.brightness, in: 0...250, step: 1) { editing in
-//                            data.writeOutgoingValue("\(4000 + data.brightness)")
-//                        }
+            if data.periph.state == CBPeripheralState.connected {
+                
+                Button("Check for firmware updates"){bleController.getLatestFirmwareVersion()}.padding(.vertical, 1)
+
+                //Text(getCharValue(data.periph.services?.first(where: {$0.uuid == UUIDs.VERSION_SERVICE_UUID})?.characteristics?.first?.value))
+
+                if (data.currentFirmwareVersion != "" && bleController.latestFirmwareVersion != "" && data.currentFirmwareVersion != bleController.latestFirmwareVersion) {
+                    HStack {
+                        Text("An update is available!")
+                        Button(action: {bleController.sendFile(name: data.name)}) {
+                            Text("Update firmware")
+                        }
+                    }
+                }
+                VStack {
+                    Text("Current version: \(getCharValue(data.periph.services?.first(where: {$0.uuid == UUIDs.VERSION_SERVICE_UUID})?.characteristics?.first?.value))")
+                    
+                    Text("Latest version: \(bleController.latestFirmwareVersion)")
+                }
+                
+                Text("Name: \(data.periph.name!)")
+                    .font(.largeTitle)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 5)
+                    .background(.black.opacity(0.75))
+                    .clipShape(Capsule())
+//                if let state = getNumbers(data.periph.services?.first(where: {$0.uuid == UUIDs.STATE_SERVICE_UUID})?.characteristics?.first?.value){
+//                    ForEach(0 ..< state.count, id: \.self) { value in
+//                        Text("\(value) : \(state[value])")
 //                    }
 //                }
-//                HStack {
-////                    Button("Mode") {
-////                        data.writeOutgoingValue("3000")
-////                    }
-//                    Button("Color") {
-//                        data.writeOutgoingValue("4000")
+
+                VStack {
+                    Text("Time: \(data.connectionTimeOut)")
+                        .font(.largeTitle)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 5)
+                        .background(.black.opacity(0.75))
+                        .clipShape(Capsule())
+                }
+
+                VStack {
+                    HStack {
+                        Text("Gain ")
+                        Slider(value: $data.gain, in: 0...30, step: 1) { editing in
+                            data.writeOutgoingValue("\(1000 + data.gain)")
+                        }
+                    }
+                    HStack {
+                        Text("Squelch ")
+                        Slider(value: $data.squelch, in: 0...30, step: 1) { editing in
+                            data.writeOutgoingValue("\(2000 + data.squelch)")
+                        }
+                    }
+                    HStack {
+                        Text("Brightness ")
+                        Slider(value: $data.brightness, in: 0...250, step: 1) { editing in
+                            data.writeOutgoingValue("\(4000 + data.brightness)")
+                        }
+                    }
+                }
+                HStack {
+//                    Button("Mode") {
+//                        data.writeOutgoingValue("3000")
 //                    }
-//                }
-//
-//                NavigationLink(destination: WifiSettingsView(data: data), label: { Text("Wifi Settings") })
-//
-//                NavigationLink(destination: ModeSelectView(data: data), label: { Text("Mode Select") })
-//
+                    Button("Color") {
+                        data.writeOutgoingValue("4000")
+                    }
+                }
+
+                NavigationLink(destination: WifiSettingsView(data: data), label: { Text("Wifi Settings") }).padding(.vertical, 1)
+
+                NavigationLink(destination: ModeSelectView(data: data), label: { Text("Mode Select") }).padding(.vertical, 1)
+
 
                 
-        //    }
+            }
         }
     }
 }
@@ -164,7 +177,7 @@ func getCharValue(_ data: Data?)  -> String {
       }
     let ASCIIstring = NSString(data: characteristicValue, encoding: String.Encoding.utf8.rawValue)
     characteristicASCIIValue = ASCIIstring ?? ""
-    print("Value converted: \((characteristicASCIIValue as String))")
+   // print("Value converted: \((characteristicASCIIValue as String))")
     return characteristicASCIIValue as String
 }
 

@@ -10,13 +10,16 @@ public var connected = false;
 class Saber: Identifiable, ObservableObject {
     var name: String
     let id = UUID()
-
+    
+    @Published var currentFirmwareVersion = ""
     @Published var state = []
     @Published var brightness = 100.0
     @Published var opMode = 0
     @Published var gain = 0.0
     @Published var squelch = 0.0
     @Published var artnetMode = 0.0
+    @Published var bpm = 0
+    @Published var currentPalette = 0
     @Published var redValue = 0.0
     @Published var greenValue = 0.0
     @Published var blueValue = 0.0
@@ -24,7 +27,7 @@ class Saber: Identifiable, ObservableObject {
     @Published var periph: CBPeripheral!
     @Published var ssid = ""
     @Published var password = ""
-    @Published var connectionTimeOut = 440000
+    @Published var connectionTimeOut = 4
     @Published var modes = ["Solid Color",
                             "Make Noise",
                             "Bounce",
@@ -83,8 +86,23 @@ class Saber: Identifiable, ObservableObject {
         }
     }
     
+    @discardableResult func getCurrentFirmwareVersion() -> String {
+        if let myPeripheral = periph
+        {
+            if let rxCharacteristic = myPeripheral.services?.first(where: {$0.uuid == UUIDs.VERSION_SERVICE_UUID})?.characteristics?.first?.value //fix this
+            {
+                self.currentFirmwareVersion = String(decoding: rxCharacteristic, as: UTF8.self)
+            } else {
+                print("error getting version # from saber")
+                return ""
+            }
+        }
+        print("current version \(self.currentFirmwareVersion)")
+        return self.currentFirmwareVersion
+    }
+    
     func resetConnectionExpiration() {
-        self.connectionTimeOut = 40000;
+        self.connectionTimeOut = 4;
     }
 
 }
@@ -93,16 +111,15 @@ class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
 {
     var centralManager: CBCentralManager!             //the ios device
     @Published var myPeripherals = [Saber]()         //the ble peripheral device
-    
+    @Published var latestFirmwareVersion = ""
         
-    //Used by contentView.swift
+    //Used for ota
     @Published var name = ""
     @Published var connected = false
     @Published var transferProgress : Double = 0.0
     @Published var chunkCount = 2 // number of chunks to be sent before peripheral needs to accknowledge.
     @Published var elapsedTime = 0.0
     @Published var kBPerSecond = 0.0
-    
     
     //transfer varibles
     var dataToSend = Data()
@@ -116,11 +133,12 @@ class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
     var stopTime = 0.0
     var firstAcknowledgeFromESP32 = false
     
-    
     override init()
     {
         super.init()
         centralManager = CBCentralManager(delegate: self, queue: nil)
+       let v = try? getLatestFirmwareVersion()
+        latestFirmwareVersion = v as? String ?? ""
     }
     
     func getCharValue(_ data: Data?)  -> String {
@@ -226,28 +244,28 @@ class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
             return
         }
         let saber = self.myPeripherals.first(where: {$0.name == peripheral.name})
-        print(saber?.name as Any)
         let ASCIIstring = NSString(data: characteristicValue, encoding: String.Encoding.utf8.rawValue)
         characteristicASCIIValue = ASCIIstring ?? ""
-        print("Value Recieved: \((characteristicASCIIValue as String))")
+        print("Value Recieved: \(characteristicASCIIValue as String) ")
         
         let valueReceived: String = characteristicASCIIValue as String
         if characteristic.service?.uuid == UUIDs.STATE_SERVICE_UUID {
-            print("a state notification was sent")
+            
             //unwrap state characterstic here
             let state = getNumbers(valueReceived)
-            
+            print("periph state: \(state.count)")
             if state.count == 7 {
                 saber?.opMode = state[0]
                 saber?.gain   = Double(state[1])
                 saber?.squelch = Double(state[2])
                 saber?.brightness = Double(state[3])
                 saber?.artnetMode = Double(state[4])
-                saber?.redValue = Double(state[5])
-                saber?.greenValue = Double(state[6])
-                saber?.blueValue = Double(state[6])
+                saber?.bpm = state[5]
+                saber?.currentPalette = state[6]
+//                saber?.blueValue = Double(state[6])
 
                 saber?.resetConnectionExpiration()
+                return
             }
         }
         if characteristic.service?.uuid == UUIDs.OTA_SERVICE_UUID {
@@ -255,23 +273,26 @@ class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
                     print(error)
                     return
                 }
-                if let data = characteristic.value {
-                    // deal with incoming data
-                    // First check if the incoming data is one byte length?
-                    // if so it's the peripheral acknowledging and telling
-                    // us to send another batch of data
-                    if data.count == 1 {
-                        if !firstAcknowledgeFromESP32 {
-                            firstAcknowledgeFromESP32 = true
-                            startTime = CFAbsoluteTimeGetCurrent()
-                        }
-                        //print("\(Date()) -X-")
-                        if transferOngoing {
-                            packageCounter = 0
-                            writeDataToPeriheral(periphName: saber?.name)
-                        }
+            if let data = characteristic.value {
+                // deal with incoming data
+                // First check if the incoming data is one byte length?
+                // if so it's the peripheral acknowledging and telling
+                // us to send another batch of data
+                if data.count == 1 {
+                    if !firstAcknowledgeFromESP32 {
+                        firstAcknowledgeFromESP32 = true
+                        startTime = CFAbsoluteTimeGetCurrent()
+                    }
+                    //print("\(Date()) -X-")
+                    if transferOngoing {
+                        packageCounter = 0
+                        writeDataToPeriheral(periphName: saber?.name)
                     }
                 }
+            }
+        }
+        if (characteristic.service?.uuid == UUIDs.VERSION_SERVICE_UUID) {
+            saber?.getCurrentFirmwareVersion()
         }
         
         
@@ -352,7 +373,7 @@ class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
 
                // 3. Create a range based on the length of data to return
                range = (0..<min(chunkSize, dataBuffer.count))
-               
+                
                // 4. Get a subcopy copy of data
                let subData = dataBuffer.subdata(in: range)
                
@@ -382,10 +403,18 @@ class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
                kBPerSecond = kbPs / 1000
            }
     }
-
+    
+    func getLatestFirmwareVersion() throws -> Data? {
+        guard let version = try? Data(contentsOf: URL(string: "https://raw.githubusercontent.com/PaleWind/ota-test/main/versions.json")!) else { return nil }
+        let json = try JSONDecoder().decode(FirmwareVersion.self, from: version)
+        print("latest version : \(json)")
+        return version
+    }
+    
     func getBinFileToData(name: String) throws -> Data? {
-        guard let blob = try? Data(contentsOf: URL(string: "https://github.com/PaleWind/ota-test/raw/main/test.ino.esp32s3.bin")!) else { return nil }
-        print(blob)
+        guard let blob = try? Data(contentsOf: URL(string: "https://github.com/PaleWind/ota-test/raw/main/1.1.1.bin")!) else { return nil }
+        let version = try JSONDecoder().decode(FirmwareVersion.self, from: blob)
+        print("latest version : \(version)")
 //        guard let fileURL = Bundle.main.url(forResource: "update", withExtension: "text") else { return nil }
 //        do {
 //            let fileData = try Data(contentsOf: fileURL)
@@ -400,6 +429,10 @@ class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
 }
 
 
+struct FirmwareVersion : Codable
+{
+    let version: String
+}
 
 struct UUIDs
 {
@@ -407,7 +440,8 @@ struct UUIDs
     static let SSID_SERVICE_UUID = CBUUID(string: "172b0aa9-9723-45c6-94bc-78102bbc9961")
     static let PASSWORD_SERVICE_UUID = CBUUID(string: "0d603309-3610-457e-abdd-b0e12057bdab")
     static let OTA_SERVICE_UUID = CBUUID(string: "0dc6ee5c-9002-412c-8af4-a97aaa994602")
-
+    static let VERSION_SERVICE_UUID = CBUUID(string: "e5166f27-4c4d-4429-88e4-64dae8efc38b")
+    
     static let CHARACTERISTIC_TX_UUID = CBUUID(string: "62ec0272-3ec5-11eb-b378-0242ac130003")
     static let CHARACTERISTIC_OTA_UUID = CBUUID(string: "62ec0272-3ec5-11eb-b378-0242ac130005")
 }

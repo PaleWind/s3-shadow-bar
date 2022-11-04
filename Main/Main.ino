@@ -1,6 +1,8 @@
  
   ////////////////////////////////////////////////////////
- /*///////*/#define DEVICE_NAME "ShadowBox_bar-01"///////
+      #define DEVICE_NAME       "ShadowBox_bar-01"
+      #define SOFTWARE_VERSION  "1.1.1"
+      #define HARDWARE_VERSION  "1"
 ////////////////////////////////////////////////////////
                                  
 
@@ -17,6 +19,10 @@ Preferences preferences;
 #include <future>
 using namespace std;
 
+#include "esp_ota_ops.h"
+#include "nvs_flash.h"
+#include "nvs.h"
+
 //OLED
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
@@ -31,10 +37,15 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 bool redrawScreen = false;
 
 //Bluetooth
-#include <BLEDevice.h>
-#include <BLEUtils.h>
-#include <BLEServer.h>
-#include <BLE2902.h>
+#include "NimBLEDevice.h" 
+#include "esp_ota_ops.h"
+#include "nvs_flash.h"
+#include "nvs.h"
+#include <esp_task_wdt.h>
+//#include <BLEDevice.h>
+//#include <BLEUtils.h>
+//#include <BLEServer.h>
+//#include <BLE2902.h>
 
 //Wifi 
 #include <ArtnetWifi.h>
@@ -57,7 +68,7 @@ String password = "";
 char* ipAddress = "";
 int opMode = 0;
 int artnetMode = 0;
-int effectBrightness = 200;
+int effectBrightness = 0;
 int squelch = 10;              // Squelch, cuts out low level sounds
 int gain = 10;                 // Gain, boosts input level
 int bpm = 35;
@@ -70,26 +81,27 @@ int currentArtnetMode = 0;
   /////////////////////////////////////////////////////////////
  //////////// State machine //////////////////////////////////
 /////////////////////////////////////////////////////////////
-BLECharacteristic* stateCharacteristic = NULL; 
+NimBLECharacteristic* stateCharacteristic = NULL; 
 void setStateCharacteristic()
 {
   // bundle the state params into a delimited string
-  stateStr = to_string(opMode) + ","
-           + to_string(gain) + ","
-           + to_string(squelch) + ","
-           + to_string(effectBrightness) + ","
-           + to_string(artnetMode) + ","
-           + to_string(bpm) + ","
-           + to_string(bpm) + ",";
+  stateStr = to_string(opMode) 
+     + "," + to_string(gain)
+     + "," + to_string(squelch)
+     + "," + to_string(effectBrightness)
+     + "," + to_string(artnetMode)
+     + "," + to_string(bpm)
+     + "," + to_string(currentPalette);
            //add more state variables
   Serial.println(stateStr.c_str());
   Serial.println(stateStr.length());
-  stateCharacteristic->setValue(stateStr.c_str());
+  std::vector<uint8_t> vec(stateStr.begin(), stateStr.end());
+  stateCharacteristic->setValue(vec);
 }
 
 class stateCharacteristicCallbacks: public BLECharacteristicCallbacks 
 {
-    void onNotify(BLECharacteristic *stateCharacteristic) 
+    void onNotify(NimBLECharacteristic *pCharacteristic) 
     {
       try 
       {
@@ -169,7 +181,9 @@ void setup(void)
   setupAudio();
   setupBluetooth();
   //ConnectWifi();
-    
+
+  Serial.println(SOFTWARE_VERSION);
+   
   xTaskCreatePinnedToCore( /* Enable second core*/
   esploop1,               /* Task function. */
   "loop2",                /* name of task. */
@@ -201,7 +215,6 @@ void loop2(void)
   {
     if (bluetoothOn && deviceConnected)
     {
-      
       setStateCharacteristic();
       stateCharacteristic->notify();
     }
@@ -213,24 +226,19 @@ void loop2(void)
   if(bluetoothOn && millis() - lastRefreshTime >= REFRESH_INTERVAL)
   {
     lastRefreshTime += REFRESH_INTERVAL;
-//    u8x8.drawString(0, 3, std::to_string(xPortGetCoreID()).c_str());
-//    u8x8.clearLine(4);
-//    u8x8.drawString(0, 4, deviceConnected ? "connected" : "not connected");
     if (!deviceConnected)
     {
-      BLEDevice::startAdvertising();
+      NimBLEDevice::startAdvertising();
       pServer->startAdvertising(); // restart advertising
-      Serial.printf("hey, wanna smoke some weed? on core %d", xPortGetCoreID());Serial.println();
+      Serial.printf("smoke some weeeeeed!! on core %d", xPortGetCoreID());Serial.println(); 
       oldDeviceConnected = deviceConnected;
     }  
   }
   else if(!bluetoothOn)
   {
-    BLEDevice::stopAdvertising();
+    NimBLEDevice::stopAdvertising();
     deviceConnected = false;
   }
-
   
   updateScreen();
-  //u8x8.drawString(0, 5, std::to_string(rotationCounter).c_str());
 }

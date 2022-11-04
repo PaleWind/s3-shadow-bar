@@ -28,18 +28,18 @@ struct WifiSettingsView: View {
                 .disableAutocorrection(true)
                 .border(.secondary)
             }
-            Text(getCharValue(data.periph.services?.first(where: {$0.uuid == UUIDs.PASSWORD_SERVICE_UUID})?.characteristics?.first?.value))
+            Text(getCharValue(data.periph.services?.first(where: {$0.uuid == UUIDs.SSID_SERVICE_UUID})?.characteristics?.first?.value))
             
             HStack {
                 Text("Password")
                 Spacer()
                 TextField(
                     getCharValue(data.periph.services?.first(where: {$0.uuid == UUIDs.PASSWORD_SERVICE_UUID})?.characteristics?.first?.value),
-                    text: $data.ssid
+                    text: $data.password
                 )
                 .onSubmit {
-                    print(data.ssid)
-                    data.writeOutgoingSsid(data.ssid)
+                    print(data.password)
+                    data.writeOutgoingPassword(data.password)
                 }
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
