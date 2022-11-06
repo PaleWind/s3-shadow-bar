@@ -89,22 +89,28 @@ struct listedPeripheralsView: View {
             }
             if data.periph.state == CBPeripheralState.connected {
                 
-                Button("Check for firmware updates"){bleController.getLatestFirmwareVersion()}.padding(.vertical, 1)
+                Button(action: {
+                    do{ try _ = bleController.getLatestFirmwareVersion() }
+                    catch { }
+                }) {
+                    Text("Check for firmware updates")
+                }
+//                Button("Check for firmware updates"){bleController.getLatestFirmwareVersion()}.padding(.vertical, 1)
 
                 //Text(getCharValue(data.periph.services?.first(where: {$0.uuid == UUIDs.VERSION_SERVICE_UUID})?.characteristics?.first?.value))
 
-                if (data.currentFirmwareVersion != "" && bleController.latestFirmwareVersion != "" && data.currentFirmwareVersion != bleController.latestFirmwareVersion) {
+//                if (data.currentFirmwareVersion != "" && bleController.latestFirmwareVersion != "" && data.currentFirmwareVersion != bleController.latestFirmwareVersion) {
                     HStack {
                         Text("An update is available!")
                         Button(action: {bleController.sendFile(name: data.name)}) {
                             Text("Update firmware")
                         }
                     }
-                }
+//                }
                 VStack {
                     Text("Current version: \(getCharValue(data.periph.services?.first(where: {$0.uuid == UUIDs.VERSION_SERVICE_UUID})?.characteristics?.first?.value))")
                     
-                    Text("Latest version: \(bleController.latestFirmwareVersion)")
+                    Text("Latest version: \(bleController.latestFirmwareVersion.version)")
                 }
                 
                 Text("Name: \(data.periph.name!)")

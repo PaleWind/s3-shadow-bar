@@ -111,7 +111,7 @@ class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
 {
     var centralManager: CBCentralManager!             //the ios device
     @Published var myPeripherals = [Saber]()         //the ble peripheral device
-    @Published var latestFirmwareVersion = ""
+    @Published var latestFirmwareVersion: FirmwareVersion
         
     //Used for ota
     @Published var name = ""
@@ -135,10 +135,11 @@ class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
     
     override init()
     {
+        latestFirmwareVersion = try! getLatestFirmwareVersionD()
         super.init()
         centralManager = CBCentralManager(delegate: self, queue: nil)
-       let v = try? getLatestFirmwareVersion()
-        latestFirmwareVersion = v as? String ?? ""
+        
+        //latestFirmwareVersion = v as? String ?? ""
     }
     
     func getCharValue(_ data: Data?)  -> String {
@@ -254,14 +255,14 @@ class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
             //unwrap state characterstic here
             let state = getNumbers(valueReceived)
             print("periph state: \(state.count)")
-            if state.count == 7 {
+            if state.count == 4 {
                 saber?.opMode = state[0]
                 saber?.gain   = Double(state[1])
                 saber?.squelch = Double(state[2])
                 saber?.brightness = Double(state[3])
-                saber?.artnetMode = Double(state[4])
-                saber?.bpm = state[5]
-                saber?.currentPalette = state[6]
+               // saber?.artnetMode = Double(state[4])
+               // saber?.bpm = state[5]
+               // saber?.currentPalette = state[6]
 //                saber?.blueValue = Double(state[6])
 
                 saber?.resetConnectionExpiration()
@@ -414,6 +415,7 @@ class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
     func getBinFileToData(name: String) throws -> Data? {
         guard let blob = try? Data(contentsOf: URL(string: "https://github.com/PaleWind/ota-test/raw/main/1.1.1.bin")!) else { return nil }
         let version = try JSONDecoder().decode(FirmwareVersion.self, from: blob)
+
         print("latest version : \(version)")
 //        guard let fileURL = Bundle.main.url(forResource: "update", withExtension: "text") else { return nil }
 //        do {
@@ -428,6 +430,15 @@ class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
     
 }
 
+func getLatestFirmwareVersionD() throws -> FirmwareVersion {
+    guard let result = try? Data(contentsOf: URL(string: "https://raw.githubusercontent.com/PaleWind/ota-test/main/versions.json")!) else { return FirmwareVersion(version: "0") }
+    print("result: \(result)")
+    //let json = try JSONDecoder().decode(FirmwareVersion.self, from: result)
+    let latestFirmware = FirmwareVersion(version: "0")
+
+    //print("latest version : \(json)")
+    return latestFirmware
+}
 
 struct FirmwareVersion : Codable
 {
