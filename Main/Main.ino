@@ -1,6 +1,6 @@
  
   ////////////////////////////////////////////////////////
-      #define DEVICE_NAME       "ShadowBox_bar-04"
+      #define DEVICE_NAME       "ShadowBox_bar-01"
       #define SOFTWARE_VERSION  "1.1.1"
       #define HARDWARE_VERSION  "1"
 ////////////////////////////////////////////////////////
@@ -167,8 +167,8 @@ void setup(void)
 //  delay(1000);
   
   preferences.begin("credentials", false); 
-  ssid = preferences.getString("ssid", "NETGEAR72");
-  password = preferences.getString("password", "brightfinch278");
+  ssid = preferences.getString("ssid", ssid);
+  password = preferences.getString("password", password);
 
   FastLED.addLeds<LED_TYPE, DATA_PIN, CLK_PIN, COLOR_ORDER, DATA_RATE_MHZ(12)>(leds, NUM_LEDS);
   FastLED.setBrightness(200);

@@ -255,14 +255,14 @@ class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
             //unwrap state characterstic here
             let state = getNumbers(valueReceived)
             print("periph state: \(state.count)")
-            if state.count == 4 {
+            if state.count == 7 {
                 saber?.opMode = state[0]
                 saber?.gain   = Double(state[1])
                 saber?.squelch = Double(state[2])
                 saber?.brightness = Double(state[3])
-               // saber?.artnetMode = Double(state[4])
-               // saber?.bpm = state[5]
-               // saber?.currentPalette = state[6]
+                saber?.artnetMode = Double(state[4])
+                saber?.bpm = state[5]
+                saber?.currentPalette = state[6]
 //                saber?.blueValue = Double(state[6])
 
                 saber?.resetConnectionExpiration()
@@ -414,9 +414,9 @@ class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
     
     func getBinFileToData(name: String) throws -> Data? {
         guard let blob = try? Data(contentsOf: URL(string: "https://github.com/PaleWind/ota-test/raw/main/1.1.1.bin")!) else { return nil }
-        let version = try JSONDecoder().decode(FirmwareVersion.self, from: blob)
+        //let version = try JSONDecoder().decode(FirmwareVersion.self, from: blob)
 
-        print("latest version : \(version)")
+        //print("latest version : \(version)")
 //        guard let fileURL = Bundle.main.url(forResource: "update", withExtension: "text") else { return nil }
 //        do {
 //            let fileData = try Data(contentsOf: fileURL)
