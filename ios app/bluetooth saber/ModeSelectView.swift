@@ -16,15 +16,15 @@ struct ModeSelectView: View {
                 VStack {
                     ForEach(Array(data.modes.enumerated()), id: \.element) { index, element in
 
-                    Button(element) {
-                        data.writeOutgoingValue(String(3000 + index))
+                        Button(element) {
+                            data.writeOutgoingValue(String(3000 + index))
+                        }
+                        .padding()
+                        .background(.blue)
+                        .foregroundColor(.white)
+                        .clipShape(Capsule())
                     }
-                    .padding()
-                    .background(.blue)
-                    .foregroundColor(.white)
-                    .clipShape(Capsule())
                 }
-            }
         }
     }
 }

@@ -7,105 +7,118 @@ public var rxCharacteristic: CBCharacteristic!
 public var periphDevice: CBPeripheral!
 public var connected = false;
 
-class Saber: Identifiable, ObservableObject {
-    var name: String
-    let id = UUID()
-    
-    @Published var currentFirmwareVersion = ""
-    @Published var state = []
-    @Published var brightness = 100.0
-    @Published var opMode = 0
-    @Published var gain = 0.0
-    @Published var squelch = 0.0
-    @Published var artnetMode = 0.0
-    @Published var bpm = 0
-    @Published var currentPalette = 0
-    @Published var redValue = 0.0
-    @Published var greenValue = 0.0
-    @Published var blueValue = 0.0
-    @Published var isConnected = false
-    @Published var periph: CBPeripheral!
-    @Published var ssid = ""
-    @Published var password = ""
-    @Published var connectionTimeOut = 4
-    @Published var modes = ["Solid Color",
-                            "Make Noise",
-                            "Bounce",
-                            "Two Bars",
-                            "Strobe",
-                            "Breathe",
-                            "Scrl Up HP",
-                            "Scrl Up LP",
-                            "Scrl Down HP",
-                            "Scrl Down LP",
-                            "Scrl Out HP",
-                            "scrollLowsDown",
-                            "scrollOut",
-                            "scrollOutTwo",
-                            "artnetMap",
-                            "artnetDMX"]
-    
-    init (periph:CBPeripheral!, name: String) {
-        self.periph = periph
-        self.name = name
-    }
-    
-    func writeOutgoingValue(_ data: String) {
-        let valueString = (data as NSString).data(using: String.Encoding.utf8.rawValue)
-        if let myPeripheral = periph
-        {
-            if let txCharacteristic = myPeripheral.services?.first?.characteristics?.first //fix this 
-            {
-                myPeripheral.writeValue(valueString!, for: txCharacteristic, type: CBCharacteristicWriteType.withResponse)
-                print(txCharacteristic.value as Any)
-            }
-        }
-    }
-    
-    func writeOutgoingSsid(_ data: String) {
-        let valueString = (data as NSString).data(using: String.Encoding.utf8.rawValue)
-        if let myPeripheral = periph
-        {
-            if let txCharacteristic = myPeripheral.services?.first(where: {$0.uuid == UUIDs.SSID_SERVICE_UUID})?.characteristics?.first //fix this
-            {
-                print(valueString as Any)
-                myPeripheral.writeValue(valueString!, for: txCharacteristic, type: CBCharacteristicWriteType.withResponse)
-            }
-        }
-    }
-    
-    func writeOutgoingPassword(_ data: String) {
-        let valueString = (data as NSString).data(using: String.Encoding.utf8.rawValue)
-        if let myPeripheral = periph
-        {
-            if let txCharacteristic = myPeripheral.services?.first(where: {$0.uuid == UUIDs.PASSWORD_SERVICE_UUID})?.characteristics?.first //fix this
-            {
-                print(valueString as Any)
-                myPeripheral.writeValue(valueString!, for: txCharacteristic, type: CBCharacteristicWriteType.withResponse)
-            }
-        }
-    }
-    
-    @discardableResult func getCurrentFirmwareVersion() -> String {
-        if let myPeripheral = periph
-        {
-            if let rxCharacteristic = myPeripheral.services?.first(where: {$0.uuid == UUIDs.VERSION_SERVICE_UUID})?.characteristics?.first?.value //fix this
-            {
-                self.currentFirmwareVersion = String(decoding: rxCharacteristic, as: UTF8.self)
-            } else {
-                print("error getting version # from saber")
-                return ""
-            }
-        }
-        print("current version \(self.currentFirmwareVersion)")
-        return self.currentFirmwareVersion
-    }
-    
-    func resetConnectionExpiration() {
-        self.connectionTimeOut = 4;
-    }
-
-}
+//class Saber: Identifiable, ObservableObject {
+//    var name: String
+//    var id: UUID
+//    @Published var periph: CBPeripheral!
+//
+//    @Published var currentFirmwareVersion = ""
+//    @Published var state = []
+//    @Published var brightness = 100.0
+//    @Published var opMode = 0
+//    @Published var gain = 0.0
+//    @Published var squelch = 0.0
+//    @Published var artnetMode = 0.0
+//    @Published var bpm = 0
+//    @Published var currentPalette = 0
+//    @Published var redValue = 0.0
+//    @Published var greenValue = 0.0
+//    @Published var blueValue = 0.0
+//    @Published var isConnected = false
+//    @Published var ssid = ""
+//    @Published var password = ""
+//    @Published var connectionTimeOut = 4
+//    @Published var modes = ["Solid Color",
+//                            "Make Noise",
+//                            "Bounce",
+//                            "Two Bars",
+//                            "Strobe",
+//                            "Breathe",
+//                            "Scrl Up HP",
+//                            "Scrl Up LP",
+//                            "Scrl Down HP",
+//                            "Scrl Down LP",
+//                            "Scrl Out HP",
+//                            "scrollLowsDown",
+//                            "scrollOut",
+//                            "scrollOutTwo",
+//                            "artnetMap",
+//                            "artnetDMX"]
+//
+//    init (periph:CBPeripheral!, name: String, id: UUID) {
+//        self.periph = periph
+//        self.name = name
+//        self.id = id
+//    }
+//
+//    func writeOutgoingValue(_ data: String) {
+//        let valueString = (data as NSString).data(using: String.Encoding.utf8.rawValue)
+//        if let myPeripheral = periph
+//        {
+//            if let txCharacteristic = myPeripheral.services?.first?.characteristics?.first //fix this
+//            {
+//                myPeripheral.writeValue(valueString!, for: txCharacteristic, type: CBCharacteristicWriteType.withResponse)
+//                print(txCharacteristic.value as Any)
+//            }
+//        }
+//    }
+//
+//    func writeOutgoingDeviceName(_ data: String) {
+//        let valueString = (data as NSString).data(using: String.Encoding.utf8.rawValue)
+//        if let myPeripheral = periph
+//        {
+//            if let txCharacteristic = myPeripheral.services?.first(where: {$0.uuid == UUIDs.SSID_SERVICE_UUID})?.characteristics?.first(where: {$0.uuid == UUIDs.NAME_CHARACTERISTIC_UUID})
+//            {
+//                print(valueString as Any)
+//                myPeripheral.writeValue(valueString!, for: txCharacteristic, type: CBCharacteristicWriteType.withResponse)
+//            }
+//        }
+//    }
+//
+//    func writeOutgoingSsid(_ data: String) {
+//        let valueString = (data as NSString).data(using: String.Encoding.utf8.rawValue)
+//        if let myPeripheral = periph
+//        {
+//            if let txCharacteristic = myPeripheral.services?.first(where: {$0.uuid == UUIDs.SSID_SERVICE_UUID})?.characteristics?.first(where: {$0.uuid == UUIDs.SSID_CHARACTERISTIC_UUID})
+//            {
+//                print(valueString as Any)
+//                myPeripheral.writeValue(valueString!, for: txCharacteristic, type: CBCharacteristicWriteType.withResponse)
+//            }
+//        }
+//    }
+//
+//    func writeOutgoingPassword(_ data: String) {
+//        let valueString = (data as NSString).data(using: String.Encoding.utf8.rawValue)
+//        if let myPeripheral = periph
+//        {
+//            if let txCharacteristic = myPeripheral.services?.first(where: {$0.uuid == UUIDs.PASSWORD_SERVICE_UUID})?.characteristics?.first //fix this
+//            {
+//                print(valueString as Any)
+//                myPeripheral.writeValue(valueString!, for: txCharacteristic, type: CBCharacteristicWriteType.withResponse)
+//            }
+//        }
+//    }
+//
+//    @discardableResult func getCurrentFirmwareVersion() -> String {
+//        if let myPeripheral = periph
+//        {
+//            if let rxCharacteristic = myPeripheral.services?.first(where: {$0.uuid == UUIDs.VERSION_SERVICE_UUID})?.characteristics?.first?.value //fix this
+//            {
+//                self.currentFirmwareVersion = String(decoding: rxCharacteristic, as: UTF8.self)
+//            } else {
+//                print("error getting version # from saber")
+//                return ""
+//            }
+//        }
+//        print("current version \(self.currentFirmwareVersion)")
+//        return self.currentFirmwareVersion
+//    }
+//
+//    func resetConnectionExpiration() {
+//        self.connectionTimeOut = 4;
+//    }
+//
+//}
 
 class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeripheralDelegate
 {
@@ -172,12 +185,23 @@ class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
         if let pname = peripheral.name
         {
             print(pname)
-            let results = myPeripherals.filter { $0.name == pname }
-            if pname.contains("ShadowBox") && results.isEmpty
+            let results = myPeripherals.filter { $0.id == peripheral.identifier }
+            let prefix = pname.firstIndex(of: "-") ?? "".startIndex
+            if pname[...prefix].contains("Shadow") && results.isEmpty
+                //&& peripheral.state != CBPeripheralState.connected
             {
+                var displayName: String
+                // if theres a suffix make that the display name.
+                // otherwise use the count and include the prefix
                 print("found one!")
+                if pname[prefix...].count > 1 {
+                    displayName = String(pname[prefix...])
+                } else {
+                    displayName = pname + String(myPeripherals.count + 1)
+                }
+
                 //self.centralManager.connect(peripheral, options: nil)
-                self.myPeripherals.append(Saber(periph: peripheral, name: pname))
+                self.myPeripherals.append(Saber(periph: peripheral, name: displayName, id: peripheral.identifier))
                 
                 self.myPeripherals.last!.periph.delegate = self
             }
@@ -244,17 +268,17 @@ class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
             print("no data")
             return
         }
-        let saber = self.myPeripherals.first(where: {$0.name == peripheral.name})
+        let saber = self.myPeripherals.first(where: {$0.id == peripheral.identifier})
         let ASCIIstring = NSString(data: characteristicValue, encoding: String.Encoding.utf8.rawValue)
         characteristicASCIIValue = ASCIIstring ?? ""
-        print("Value Recieved: \(characteristicASCIIValue as String) ")
+        //print("Value Recieved: \(characteristicASCIIValue as String) ")
         
         let valueReceived: String = characteristicASCIIValue as String
         if characteristic.service?.uuid == UUIDs.STATE_SERVICE_UUID {
             
             //unwrap state characterstic here
             let state = getNumbers(valueReceived)
-            print("periph state: \(state.count)")
+            //print("periph state: \(state.count)")
             if state.count == 7 {
                 saber?.opMode = state[0]
                 saber?.gain   = Double(state[1])
@@ -287,7 +311,7 @@ class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
                     //print("\(Date()) -X-")
                     if transferOngoing {
                         packageCounter = 0
-                        writeDataToPeriheral(periphName: saber?.name)
+                        writeDataToPeriheral(periphId: saber?.id ?? UUID())
                     }
                 }
             }
@@ -298,7 +322,7 @@ class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
         
         
         //print(characteristic)
-        self.myPeripherals.first(where: {$0.name == peripheral.name})?.objectWillChange.send()
+        self.myPeripherals.first(where: {$0.id == peripheral.identifier})?.objectWillChange.send()
     }
     
     func ScanAndConnect() {
@@ -316,7 +340,7 @@ class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
         centralManager.connect(saber.periph, options: nil)
        // myPeripherals[myPeripherals.count-1].periph.delegate = self
         //myPeripherals[myPeripherals.count-1].isConnected = true
-        myPeripherals.first(where: {$0.name == saber.name})?.isConnected = true
+        myPeripherals.first(where: {$0.id == saber.id})?.isConnected = true
         //myPeripherals.first(where: {$0.name == saber.name})?.periph.delegate = self
         //saber.isConnected = true
         //myPeripherals[saber.index-1].ssid = getCharValue(myPeripherals[saber.index-1].periph.services?.first?.characteristics?[1]);
@@ -326,19 +350,19 @@ class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
     func disconnectPeriph(_ saber: Saber) {
         print("disconnecting peroheral")
         centralManager.cancelPeripheralConnection(saber.periph)
-        myPeripherals.first(where: {$0.name == saber.name})?.isConnected = false
+        myPeripherals.first(where: {$0.id == saber.id})?.isConnected = false
         //myPeripherals[myPeripherals.count-1].isConnected = false
         
     }
     
     func removePeriph(_ saber: Saber) {
         print("disconnecting peroheral")
-        myPeripherals.removeAll(where: {$0.name == saber.name})
+        myPeripherals.removeAll(where: {$0.id == saber.id})
         //myPeripherals.remove(at: saber.index-1)
     }
     
     
-    func sendFile(name: String) {
+    func sendFile(id: UUID) {
         print("\(Date()) FUNC SendFile")
         
         // 1. Get the data from the file(name) and copy data to dataBUffer
@@ -356,13 +380,13 @@ class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
         sentBytes = 0
         firstAcknowledgeFromESP32 = false
         startTime = CFAbsoluteTimeGetCurrent()
-        writeDataToPeriheral(periphName: name)
+        writeDataToPeriheral(periphId: id)
     }
     
-    func writeDataToPeriheral(periphName: String?) {
+    func writeDataToPeriheral(periphId: UUID) {
            
            // 1. Get the peripheral and it's transfer characteristic
-           guard let discoveredPeripheral = myPeripherals.first(where: {$0.name == periphName}) else {return}
+           guard let discoveredPeripheral = myPeripherals.first(where: {$0.id == periphId}) else {return}
            // ATT MTU - 3 bytes
            chunkSize = discoveredPeripheral.periph.maximumWriteValueLength (for: .withoutResponse) - 3
            // Get the data range
@@ -432,7 +456,7 @@ class BleManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
 
 func getLatestFirmwareVersionD() throws -> FirmwareVersion {
     guard let result = try? Data(contentsOf: URL(string: "https://raw.githubusercontent.com/PaleWind/ota-test/main/versions.json")!) else { return FirmwareVersion(version: "0") }
-    print("result: \(result)")
+    //print("result: \(result)")
     //let json = try JSONDecoder().decode(FirmwareVersion.self, from: result)
     let latestFirmware = FirmwareVersion(version: "0")
 
@@ -447,12 +471,15 @@ struct FirmwareVersion : Codable
 
 struct UUIDs
 {
-    static let STATE_SERVICE_UUID = CBUUID(string: "172b0aa9-9d49-42c3-a5f7-5eec258b7342")
-    static let SSID_SERVICE_UUID = CBUUID(string: "172b0aa9-9723-45c6-94bc-78102bbc9961")
-    static let PASSWORD_SERVICE_UUID = CBUUID(string: "0d603309-3610-457e-abdd-b0e12057bdab")
-    static let OTA_SERVICE_UUID = CBUUID(string: "0dc6ee5c-9002-412c-8af4-a97aaa994602")
-    static let VERSION_SERVICE_UUID = CBUUID(string: "e5166f27-4c4d-4429-88e4-64dae8efc38b")
+    static let STATE_SERVICE_UUID        = CBUUID(string: "172b0aa9-9d49-42c3-a5f7-5eec258b7342")
+    static let SSID_SERVICE_UUID         = CBUUID(string: "172b0aa9-9723-45c6-94bc-78102bbc9961")
+    static let PASSWORD_SERVICE_UUID     = CBUUID(string: "0d603309-3610-457e-abdd-b0e12057bdab")
+    static let OTA_SERVICE_UUID          = CBUUID(string: "0dc6ee5c-9002-412c-8af4-a97aaa994602")
+    static let VERSION_SERVICE_UUID      = CBUUID(string: "e5166f27-4c4d-4429-88e4-64dae8efc38b")
     
-    static let CHARACTERISTIC_TX_UUID = CBUUID(string: "62ec0272-3ec5-11eb-b378-0242ac130003")
-    static let CHARACTERISTIC_OTA_UUID = CBUUID(string: "62ec0272-3ec5-11eb-b378-0242ac130005")
+    static let NAME_CHARACTERISTIC_UUID  = CBUUID(string: "5aba9817-5e43-47a0-821a-d781089c3912")
+    static let SSID_CHARACTERISTIC_UUID  = CBUUID(string: "ecc6ba40-b056-4836-a81b-f2543977caa1")
+    static let CHARACTERISTIC_TX_UUID    = CBUUID(string: "62ec0272-3ec5-11eb-b378-0242ac130003")
+    static let CHARACTERISTIC_OTA_UUID   = CBUUID(string: "62ec0272-3ec5-11eb-b378-0242ac130005")
+    static let RGB_CHARACTERISTIC_UUID   = CBUUID(string: "68f12e0a-a115-4a8e-add5-e356a1709df5")
 }

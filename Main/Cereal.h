@@ -15,7 +15,7 @@ void executeCommand(int command)
   try 
   {
     byte commandGroup = command / 1000; 
-    byte commandVal = command % 1000;
+    int commandVal = command % 1000;
     Serial.print("commandGroup: ");Serial.println(commandGroup);
     if (commandGroup == 17)
     {
@@ -60,10 +60,10 @@ void executeCommand(int command)
         break;
         
       case 4: // brightness control
-      Serial.println("brightness commanmd");
-      Serial.println(commandVal);
+      //Serial.println("brightness commanmd");
+      //Serial.println(commandVal);
         effectBrightness = commandVal;
-        FastLED.show();
+        //FastLED.show();
         break;
         
       case 5: // bpm control
@@ -74,7 +74,11 @@ void executeCommand(int command)
 //       else if (currentPalette != 0           && commandVal == 0) {currentPalette--;}
 //        break;
 //        
-
+      case 6: //RGB
+        //rgb[0] = commandVal 
+             if (commandVal >= 0   && commandVal <= 255) { red =   commandVal; }
+        else if (commandVal >= 256 && commandVal <= 511) { green = commandVal - 255; }
+        else if (commandVal >= 512 && commandVal <= 768) { blue =  commandVal - 512; }
     }
     
   }

@@ -1,6 +1,6 @@
  
   ////////////////////////////////////////////////////////
-      #define DEVICE_NAME       "ShadowBox_bar-01"
+      #define DEVICE_TYPE       "ShadowBar-01"
       #define SOFTWARE_VERSION  "1.1.1"
       #define HARDWARE_VERSION  "1"
 ////////////////////////////////////////////////////////
@@ -61,6 +61,7 @@ int paletteSize = 0;
 
 #define WDT_TIMEOUT 999999
 
+String DEVICE_NAME = ""; 
 //State variables
 string stateStr = "";
 String ssid = "";
@@ -75,6 +76,7 @@ int bpm = 35;
 int red = 0;
 int green = 0;
 int blue = 0;
+byte rgb[3];
 int currentPalette = 6;
 int currentArtnetMode = 0;
 
@@ -93,8 +95,8 @@ void setStateCharacteristic()
      + "," + to_string(bpm)
      + "," + to_string(currentPalette);
            //add more state variables
-  Serial.println(stateStr.c_str());
-  Serial.println(stateStr.length());
+  //Serial.println(stateStr.c_str());
+  //Serial.println(stateStr.length());
   std::vector<uint8_t> vec(stateStr.begin(), stateStr.end());
   stateCharacteristic->setValue(vec);
 }
@@ -167,6 +169,7 @@ void setup(void)
 //  delay(1000);
   
   preferences.begin("credentials", false); 
+  DEVICE_NAME = preferences.getString("device_name", DEVICE_TYPE);
   ssid = preferences.getString("ssid", ssid);
   password = preferences.getString("password", password);
 

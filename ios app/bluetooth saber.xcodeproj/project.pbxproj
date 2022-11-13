@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		5107841F2914306700BAF3E1 /* ApiController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5107841E2914306700BAF3E1 /* ApiController.swift */; };
+		5145194E291E703F000B37E1 /* ColorSelectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5145194D291E703F000B37E1 /* ColorSelectView.swift */; };
+		51451950291E70CF000B37E1 /* Saber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5145194F291E70CF000B37E1 /* Saber.swift */; };
 		515989C12895B5FC005750BC /* BleController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 515989C02895B5FC005750BC /* BleController.swift */; };
 		515989C42895CE07005750BC /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 515989C32895CE07005750BC /* CoreBluetooth.framework */; };
 		51623C46291014EA00D16E8B /* WifiSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51623C45291014EA00D16E8B /* WifiSettingsView.swift */; };
@@ -22,6 +24,8 @@
 
 /* Begin PBXFileReference section */
 		5107841E2914306700BAF3E1 /* ApiController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApiController.swift; sourceTree = "<group>"; };
+		5145194D291E703F000B37E1 /* ColorSelectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorSelectView.swift; sourceTree = "<group>"; };
+		5145194F291E70CF000B37E1 /* Saber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Saber.swift; sourceTree = "<group>"; };
 		515989BF2895B1A1005750BC /* bluetooth-saber-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "bluetooth-saber-Info.plist"; sourceTree = SOURCE_ROOT; };
 		515989C02895B5FC005750BC /* BleController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BleController.swift; sourceTree = "<group>"; };
 		515989C32895CE07005750BC /* CoreBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreBluetooth.framework; path = System/Library/Frameworks/CoreBluetooth.framework; sourceTree = SDKROOT; };
@@ -87,6 +91,8 @@
 				51623C45291014EA00D16E8B /* WifiSettingsView.swift */,
 				51623C472910237300D16E8B /* ModeSelectView.swift */,
 				5107841E2914306700BAF3E1 /* ApiController.swift */,
+				5145194D291E703F000B37E1 /* ColorSelectView.swift */,
+				5145194F291E70CF000B37E1 /* Saber.swift */,
 			);
 			path = "bluetooth saber";
 			sourceTree = "<group>";
@@ -175,6 +181,8 @@
 				51623C46291014EA00D16E8B /* WifiSettingsView.swift in Sources */,
 				5107841F2914306700BAF3E1 /* ApiController.swift in Sources */,
 				5175838528958FC6006F4992 /* ContentView.swift in Sources */,
+				5145194E291E703F000B37E1 /* ColorSelectView.swift in Sources */,
+				51451950291E70CF000B37E1 /* Saber.swift in Sources */,
 				5175838F28958FC7006F4992 /* bluetooth_saber.xcdatamodeld in Sources */,
 				5175838328958FC6006F4992 /* bluetooth_saberApp.swift in Sources */,
 			);

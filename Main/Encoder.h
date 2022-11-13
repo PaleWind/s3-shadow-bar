@@ -351,7 +351,7 @@ public:
   char* GetName() override
   {
     setCursor(2, 6);
-    display.write(DEVICE_NAME);
+    display.write(DEVICE_NAME.c_str());
     if (bluetoothOn && deviceConnected)
     {
       //u8x8.drawString(2, 5, "Connected!"); 

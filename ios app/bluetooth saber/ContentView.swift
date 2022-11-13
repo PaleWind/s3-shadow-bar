@@ -102,7 +102,7 @@ struct listedPeripheralsView: View {
 //                if (data.currentFirmwareVersion != "" && bleController.latestFirmwareVersion != "" && data.currentFirmwareVersion != bleController.latestFirmwareVersion) {
                     HStack {
                         Text("An update is available!")
-                        Button(action: {bleController.sendFile(name: data.name)}) {
+                        Button(action: {bleController.sendFile(id: data.id)}) {
                             Text("Update firmware")
                         }
                     }
@@ -113,7 +113,7 @@ struct listedPeripheralsView: View {
                     Text("Latest version: \(bleController.latestFirmwareVersion.version)")
                 }
                 
-                Text("Name: \(data.periph.name!)")
+                Text("Name: \(data.name)")
                     .font(.largeTitle)
                     .foregroundColor(.white)
                     .padding(.horizontal, 20)
@@ -165,11 +165,17 @@ struct listedPeripheralsView: View {
                     }
                 }
 
-                NavigationLink(destination: WifiSettingsView(data: data), label: { Text("Wifi Settings") }).padding(.vertical, 1)
+                NavigationLink(destination: WifiSettingsView(data: data), label: { Text("Wifi Settings") })
+                    .padding(.vertical, 1)
+                    .font(.largeTitle)
 
-                NavigationLink(destination: ModeSelectView(data: data), label: { Text("Mode Select") }).padding(.vertical, 1)
+                NavigationLink(destination: ModeSelectView(data: data), label: { Text("Mode Select") })
+                    .padding(.vertical, 1)
+                    .font(.largeTitle)
 
-
+                NavigationLink(destination: ColorSelectView(saber: data), label: { Text("Color Select") })
+                    .padding(.vertical, 1)
+                    .font(.largeTitle)
                 
             }
         }
@@ -193,7 +199,7 @@ func getNumbers(_ csv_string: String) -> Array<Int> {
         .compactMap {
             Int($0.trimmingCharacters(in: .whitespaces))
         }
-    print("result: \(result)" )
+    //print("result: \(result)" )
     return result
 }
 

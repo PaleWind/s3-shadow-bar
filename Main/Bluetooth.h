@@ -7,6 +7,7 @@
 
 #define SSID_SERVICE_UUID             "172b0aa9-9723-45c6-94bc-78102bbc9961"
 #define SSID_CHARACTERISTIC_UUID      "ecc6ba40-b056-4836-a81b-f2543977caa1"
+#define NAME_CHARACTERISTIC_UUID      "5aba9817-5e43-47a0-821a-d781089c3912"
 
 #define PASSWORD_SERVICE_UUID         "0d603309-3610-457e-abdd-b0e12057bdab"
 #define PASSWORD_CHARACTERISTIC_UUID  "b85b5cc4-22cf-4210-87f6-e26a6706ca83"
@@ -35,113 +36,138 @@ bool oldDeviceConnected = false;
 
 NimBLEServer* pServer = NULL;
 NimBLECharacteristic* pCharacteristic = NULL;
+NimBLECharacteristic* nameCharacteristic = NULL;
 NimBLECharacteristic* ssidCharacteristic = NULL;
 NimBLECharacteristic* passwordCharacteristic = NULL;
 NimBLECharacteristic* txCharacteristic = NULL;
 NimBLECharacteristic* otaCharacteristic = NULL;
 NimBLECharacteristic* versionCharacteristic = NULL;
 
-class MyServerCallbacks: public BLEServerCallbacks {
+class MyServerCallbacks: public BLEServerCallbacks 
+{
+  void onConnect(NimBLEServer* pServer, ble_gap_conn_desc* desc) 
+  {
+    Serial.println("*** App connected");
+    /*----------------------------------------
+     * BLE Power settings. P9 = max power +9db
+     ---------------------------------------*/
+    esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_CONN_HDL0, ESP_PWR_LVL_P9);
+    esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_CONN_HDL1, ESP_PWR_LVL_P9);
+    esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_DEFAULT, ESP_PWR_LVL_P9);
+    esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_ADV, ESP_PWR_LVL_P9);
 
-  void onConnect(NimBLEServer* pServer, ble_gap_conn_desc* desc) {
-      Serial.println("*** App connected");
-      /*----------------------------------------
-       * BLE Power settings. P9 = max power +9db
-       ---------------------------------------*/
-      esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_CONN_HDL0, ESP_PWR_LVL_P9);
-      esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_CONN_HDL1, ESP_PWR_LVL_P9);
-      esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_DEFAULT, ESP_PWR_LVL_P9);
-      esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_ADV, ESP_PWR_LVL_P9);
+    Serial.println(NimBLEAddress(desc->peer_ota_addr).toString().c_str());
+    /*    We can use the connection handle here to ask for different connection parameters.
+          Args: connection handle, min connection interval, max connection interval
+          latency, supervision timeout.
+          Units; Min/Max Intervals: 1.25 millisecond increments.
+          Latency: number of intervals allowed to skip.
+          Timeout: 10 millisecond increments, try for 5x interval time for best results.
+    */
+    pServer->updateConnParams(desc->conn_handle, 12, 12, 2, 100);
+    deviceConnected = true;
+    redrawScreen = true;
+  }
 
-      Serial.println(NimBLEAddress(desc->peer_ota_addr).toString().c_str());
-      /*    We can use the connection handle here to ask for different connection parameters.
-            Args: connection handle, min connection interval, max connection interval
-            latency, supervision timeout.
-            Units; Min/Max Intervals: 1.25 millisecond increments.
-            Latency: number of intervals allowed to skip.
-            Timeout: 10 millisecond increments, try for 5x interval time for best results.
-      */
-      pServer->updateConnParams(desc->conn_handle, 12, 12, 2, 100);
-      deviceConnected = true;
-      redrawScreen = true;
-    }
-
-    void onDisconnect(BLEServer* pServer) {
-      deviceConnected = false;
-      downloadFlag    = false;
-      Serial.println("*** App disconnected");
-      redrawScreen = true;
-    }
+  void onDisconnect(BLEServer* pServer) 
+  {
+    deviceConnected = false;
+    downloadFlag    = false;
+    Serial.println("*** App disconnected");
+    redrawScreen = true;
+  }
 };
 
 class MyWriteCallbacks: public BLECharacteristicCallbacks
 {
-    void onWrite(NimBLECharacteristic *pCharacteristic)
+  void onWrite(NimBLECharacteristic *pCharacteristic)
+  {
+    std::string stringValue = pCharacteristic->getValue();
+    if (stringValue.length() > 0)
     {
-      std::string stringValue = pCharacteristic->getValue();
-      if (stringValue.length() > 0)
-      {
-        try
-        {
-          int numVal = stoi(stringValue);
-          Serial.println(numVal);
-          byte cmdGroup = numVal / 1000;
-          byte cmdVal = numVal % 1000;
-          Serial.println(cmdGroup);
-          executeCommand(numVal);
-          setStateCharacteristic();
-          stateCharacteristic->notify();
-        }
-        catch (...)
-        {
-          Serial.println("error, captain");
-        }
-      }
-    }
-};
-class ssidCallbacks: public BLECharacteristicCallbacks
-{
-    void onWrite(NimBLECharacteristic *ssidCharacteristic)
-    {
-      std::string stringValue = ssidCharacteristic->getValue();
       try
       {
-        ssid = stringValue.c_str();
-        Serial.println(stringValue.c_str());
-        //strcpy(ssid, stringValue.c_str());//to,from
-        preferences.putString("ssid", ssid);
-        Serial.println("ssid " + ssid);
-        std::vector<uint8_t> ssidvec(ssid.begin(), ssid.end());
-        ssidCharacteristic->setValue(ssidvec);
-        ssidCharacteristic->notify();
+        int numVal = stoi(stringValue);
+        Serial.println(numVal);
+        byte cmdGroup = numVal / 1000;
+        byte cmdVal = numVal % 1000;
+        Serial.println(cmdGroup);
+        executeCommand(numVal);
+        setStateCharacteristic();
+        stateCharacteristic->notify();
       }
       catch (...)
       {
         Serial.println("error, captain");
       }
     }
+  }
+};
+
+class ssidCallbacks: public BLECharacteristicCallbacks
+{
+  void onWrite(NimBLECharacteristic *ssidCharacteristic)
+  {
+    std::string stringValue = ssidCharacteristic->getValue();
+    try
+    {
+      ssid = stringValue.c_str();
+      //strcpy(ssid, stringValue.c_str());//to,from
+      preferences.putString("ssid", ssid);
+      Serial.println("ssid " + ssid);
+      std::vector<uint8_t> ssidvec(ssid.begin(), ssid.end());
+      ssidCharacteristic->setValue(ssidvec);
+      ssidCharacteristic->notify();
+    }
+    catch (...)
+    {
+      Serial.println("error, captain");
+    }
+  } 
+};
+
+class deviceNameCallBacks: public BLECharacteristicCallbacks
+{
+  void onWrite(NimBLECharacteristic *nameCharacteristic)
+  {
+    std::string stringValue = nameCharacteristic->getValue();
+    try
+    {
+      DEVICE_NAME = stringValue.c_str();
+      //strcpy(ssid, stringValue.c_str());//to,from
+      preferences.putString("device_name", DEVICE_NAME);
+      Serial.println("new name "); Serial.println(DEVICE_NAME);
+      std::vector<uint8_t> deviceNameVec(DEVICE_NAME.begin(), DEVICE_NAME.end());
+      nameCharacteristic->setValue(deviceNameVec);
+      nameCharacteristic->notify();
+    }
+    catch (...)
+    {
+      Serial.println("error, captain");
+    }
+  }
 };
 
 class passwordCallbacks: public BLECharacteristicCallbacks
 {
-    void onWrite(NimBLECharacteristic *passwordCharacteristic)
+  void onWrite(NimBLECharacteristic *passwordCharacteristic)
+  {
+    std::string stringValue = passwordCharacteristic->getValue();
+    try
     {
-      std::string stringValue = passwordCharacteristic->getValue();
-      try
-      {
-        password = stringValue.c_str();
-        //strcpy(ssid, stringValue.c_str());//to,from
-        preferences.putString("password", password);
-        Serial.println("password " + password);
-        std::vector<uint8_t> passwordvec(password.begin(), password.end());
-        passwordCharacteristic->setValue(passwordvec);
-        passwordCharacteristic->notify();
-      }
-      catch (...)
-      {
-        Serial.println("error, captain");
-      }
+      password = stringValue.c_str();
+      //strcpy(ssid, stringValue.c_str());//to,from
+      preferences.putString("password", password);
+      Serial.println("password " + password);
+      std::vector<uint8_t> passwordvec(password.begin(), password.end());
+      passwordCharacteristic->setValue(passwordvec);
+      passwordCharacteristic->notify();
     }
+    catch (...)
+    {
+      Serial.println("error, captain");
+    }
+  }
 };
 
 
@@ -255,7 +281,8 @@ class otaCallback: public BLECharacteristicCallbacks {
 
 void setupBluetooth()
 {
-  NimBLEDevice::init(DEVICE_NAME);
+  const char* advName = DEVICE_NAME.length() > 0 ? (String(DEVICE_TYPE) + String("-") + DEVICE_NAME).c_str() : DEVICE_TYPE;
+  NimBLEDevice::init(advName);
   NimBLEDevice::setMTU(517);
 
   pServer = NimBLEDevice::createServer();
@@ -278,7 +305,7 @@ void setupBluetooth()
                       WRITE_CHARACTERISTIC_UUID,
                       NIMBLE_PROPERTY::READ  | NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::NOTIFY);
   pCharacteristic->setCallbacks(new MyWriteCallbacks());
-  pCharacteristic->setValue("You found the light! You're cleaver");
+  pCharacteristic->setValue("You found the light!");
 
   stateCharacteristic = stateService->createCharacteristic(
                           STATE_CHARACTERISTIC_UUID,
@@ -294,6 +321,13 @@ void setupBluetooth()
   ssidCharacteristic->setCallbacks(new ssidCallbacks());
   std::vector<uint8_t> ssidvec(ssid.begin(), ssid.end());
   ssidCharacteristic->setValue(ssidvec);
+
+  nameCharacteristic = ssidService->createCharacteristic(
+                         NAME_CHARACTERISTIC_UUID, 
+                         NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::NOTIFY);
+  nameCharacteristic->setCallbacks(new deviceNameCallBacks());
+  std::vector<uint8_t> deviceNameVec(DEVICE_NAME.begin(), DEVICE_NAME.end());
+  ssidCharacteristic->setValue(deviceNameVec);
 
   passwordCharacteristic = passwordService->createCharacteristic(
                              PASSWORD_CHARACTERISTIC_UUID, 
